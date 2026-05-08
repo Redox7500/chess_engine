@@ -250,8 +250,6 @@ uint64_t rook_attack_mask(int square, uint64_t blockers)
     return attacks;
 }
 
-// std::vector<uint64_t> bishopattack_mask
-
 // uint64_t nth_subset(uint64_t mask, int index)
 // {
 //     uint64_t subset = 0;
@@ -324,46 +322,12 @@ std::vector<uint64_t> all_blocker_bitboards(uint64_t naive_attack_mask)
     return blocker_bitboards;
 }
 
-// std::vector<uint64_t> bishop_attack_masks(std::vector<uint64_t> blocker_bitboards)
-// {
-//     std::vector<uint64_t> blocker_bitboards = all_blocker_bitboards(bishop_naive_attack_mask(square));
-//     std::vector<uint64_t> attack_masks(blocker_bitboards.size());
-//     for (uint64_t blocker_bitboard:blocker_bitboards)
-//     {
-//         attack_masks.push_back(bishop_attack_mask(square, blocker_bitboard));
-//     }
-//     return attack_masks;
-// }
-
-// std::vector<uint64_t> rook_attack_masks(int square)
-// {
-//     std::vector<uint64_t> blocker_bitboards = all_blocker_bitboards(rook_naive_attack_mask(square));
-//     std::vector<uint64_t> attack_masks(blocker_bitboards.size());
-//     for (uint64_t blocker_bitboard:blocker_bitboards)
-//     {
-//         attack_masks.push_back(rook_attack_mask(square, blocker_bitboard));
-//     }
-//     return attack_masks;
-// }
-
 uint64_t bishop_magic(int square, std::vector<uint64_t> blocker_bitboards, std::vector<uint64_t> attack_bitboards, int bits)
 {
-    // const int bits = popcount_64(bishop_naive_attack_mask(square)); // also popcount_64(attack_bitboards[-1]) probably
     const int size = 1 << bits;
     std::cout << size << std::endl;
 
-    // std::vector<uint64_t> blocker_bitboards(size);
-    // std::vector<uint64_t> attack_bitboards(size);
     std::vector<uint64_t> used(size);
-
-    // uint64_t blocker_bitboard = 0;
-    // for (int i = 0; i < size; i++)
-    // {
-    //     blocker_bitboard = (blocker_bitboard - naive_attack_mask) & naive_attack_mask;
-        
-    //     blocker_bitboards[i] = blocker_bitboard;
-    //     attack_bitboards[i] = bishop_attack_mask(square, blocker_bitboard);
-    // }
 
     std::mt19937_64 rng(square);
     while (true)
@@ -402,21 +366,9 @@ uint64_t bishop_magic(int square, std::vector<uint64_t> blocker_bitboards, std::
 
 uint64_t rook_magic(int square, std::vector<uint64_t> blocker_bitboards, std::vector<uint64_t> attack_bitboards, int bits)
 {
-    // const int bits = popcount_64(bishop_naive_attack_mask(square)); // also popcount_64(attack_bitboards[-1]) probably
     const int size = 1 << bits;
 
-    // std::vector<uint64_t> blocker_bitboards(size);
-    // std::vector<uint64_t> attack_bitboards(size);
     std::vector<uint64_t> used(size);
-
-    // uint64_t blocker_bitboard = 0;
-    // for (int i = 0; i < size; i++)
-    // {
-    //     blocker_bitboard = (blocker_bitboard - naive_attack_mask) & naive_attack_mask;
-        
-    //     blocker_bitboards[i] = blocker_bitboard;
-    //     attack_bitboards[i] = rook_attack_mask(square, blocker_bitboard);
-    // }
 
     std::mt19937_64 rng(square);
     while (true)
@@ -447,111 +399,6 @@ uint64_t rook_magic(int square, std::vector<uint64_t> blocker_bitboards, std::ve
     }
 }
 
-// uint64_t rook_magic(int square, uint64_t mask, int bits)
-// {
-//     const int size = 1 << bits;
-
-//     std::vector<uint64_t> occupancies(size);
-//     std::vector<uint64_t> attacks(size);
-//     std::vector<uint64_t> used(size);
-
-//     uint64_t occ = 0;
-//     for (int i = 0; i < size; i++)
-//     {
-//         occupancies[i] = occ;
-//         attacks[i] = rook_attack_mask(square, occ);
-//     }
-
-//     // int index = 0;
-//     // for (uint64_t occ = 0; ; occ = (occ - mask) & mask)
-//     // {
-//     //     occupancies[index] = occ;
-//     //     attacks[index] = rook_attack_mask(square, occ);
-
-//     //     if (++index == size)
-//     //     {
-//     //         break;
-//     //     }
-//     // }
-
-//     std::mt19937_64 rng(square);
-
-//     while (true)
-//     {
-//         uint64_t magic = random_magic(rng);
-
-//         // if (__builtin_popcountll((magic * mask) >> (64 - bits)) < 6)
-//         // {
-//         //     continue;
-//         // }
-
-//         std::fill(used.begin(), used.end(), 0);
-
-//         bool fail = false;
-//         for (int i = 0; i < size; i++)
-//         {
-//             int index = (occupancies[i] * magic) >> (64 - bits);
-//             if (!used[index])
-//             {
-//                 used[index] = attacks[i];
-//             }
-//             else if (used[index] != attacks[i])
-//             {
-//                 fail = true;
-//                 break;
-//             }
-//         }
-
-//         if (!fail)
-//         {
-//             return magic;
-//         }
-//     }
-// }
-
-// uint64_t find_rook_magic(int square, int bits)
-// {
-//     std::mt19937_64 rng(0);
-
-//     uint64_t mask = rook_mask(square);
-//     int subset_count = 1 << bits;
-
-//     std::vector<uint64_t> attacks(subset_count);
-//     for (int i = 0; i < subset_count; i++)
-//     {
-//         uint64_t occ = nth_subset(mask, i);
-//         attacks[i] = rook_attacks(square, occ);
-//     }
-
-//     while (true)
-//     {
-//         uint64_t magic = random_magic(rng);
-//         std::fill(table.begin(), table.end(), std::numeric_limits<uint64_t>::max());
-        
-//         bool fail = false;
-//         for (int i = 0; i < subset_count; i++)
-//         {
-//             uint64_t occ = nth_subset(mask, i);
-//             int index = int(occ * magic >> 64 - bits);
-
-//             if (table[index] == std::numeric_limits<uint64_t>::max())
-//             {
-//                 table[index] = attacks[i];
-//             }
-//             else if (table[index] != attacks[i])
-//             {
-//                 fail = true;
-//                 break;
-//             }
-//         }
-
-//         if (!fail)
-//         {
-//             return magic;
-//         }
-//     }
-// }
-
 template <typename T>
 void dump_array(std::ofstream& out, const char* name, const char* datatype, const char* suffix, T* array, const int size)
 {
@@ -562,19 +409,6 @@ void dump_array(std::ofstream& out, const char* name, const char* datatype, cons
     }
     out << "    " << array[size - 1] << suffix << "\n};\n\n";
 };
-
-// template <typename T>
-// void dump_array(std::ofstream& out, const char* name, const char* datatype, const char* suffix, std::vector<T> array)
-// {
-//     const int size = array.size();
-
-//     out << "constexpr " << datatype << " " << name << "[" << size << "] = {\n";
-//     for (int i = 0; i < size - 1; i++)
-//     {
-//         out << "    " << element << suffix << ",\n";
-//     }
-//     out << "    " << array[size - 1] << suffix << "\n};\n\n";
-// };
 
 template <typename T>
 void dump_nested_vector(std::ofstream& out, const char* name, const char* datatype, const char* suffix, std::vector<std::vector<T>> vector)
@@ -633,8 +467,6 @@ int main()
         bishop_shifts[square] = 64 - bishop_bits;
         rook_shifts[square] = 64 - rook_bits;
 
-        // bishop_magics[square] = bishop_magic(square, bishop_naive_attack_masks[square], bishop_bits);
-        // rook_magics[square] = rook_magic(square, rook_naive_attack_masks[square], rook_bits);
         bishop_magics[square] = bishop_magic(square, bishop_blocker_bitboards, bishop_attack_masks[square], bishop_bits);
         rook_magics[square] = rook_magic(square, rook_blocker_bitboards, rook_attack_masks[square], rook_bits);
 
@@ -643,17 +475,6 @@ int main()
 
     std::ofstream out("precomputed_bitboards.h");
     out << "#pragma once\n#include <cstdint>\n\n";
-
-    // auto dump_array = [&](const char* name, const char* datatype, const char* suffix, const auto& array)
-    // {
-    //     out << "constexpr " << datatype << " " << name << "[" << sizeof(array) / sizeof(array[0]) << "] = {\n";
-    //     for (int i = 0; i < 63; i++)
-    //     {
-    //         out << "    " << array[i] << suffix << ",\n";
-    //     }
-    //     out << "    " << array[63] << suffix << "\n";
-    //     out << "};\n\n";
-    // };
 
     dump_array(out, "knight_attack_masks"      , "uint64_t"    , "ULL", knight_attack_masks      , 64);
     dump_array(out, "king_attack_masks"        , "uint64_t"    , "ULL", king_attack_masks        , 64);
