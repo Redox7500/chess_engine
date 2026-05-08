@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/matthew/chess_engine/generate_precomputed_bitboards'
+relocations:     []
+...
