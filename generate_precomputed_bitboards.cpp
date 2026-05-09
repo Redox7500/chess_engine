@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <array>
 #include <vector>
 #include <bitset>
 #include <random>
@@ -7,19 +8,19 @@
 
 // maybe start using stuff like int8_t and size_t?
 
-inline int popcount_64(uint64_t x) {return __builtin_popcountll(x);}
-inline int lsb_64(uint64_t x) {return __builtin_ctzll(x);}
+inline uint8_t popcount_64(uint64_t x) {return __builtin_popcountll(x);}
+inline uint8_t lsb_64(uint64_t x) {return __builtin_ctzll(x);}
 
-int file_from_square(int square) {return square & 0b000111;}
-int rank_from_square(int square) {return square >> 3;}
-uint64_t bit_from_square(int square) {return uint64_t(1) << square;}
-int to_square(int file, int rank) {return rank * 8 + file;}
+uint8_t file_from_square(uint8_t square) {return square & 0b000111;}
+uint8_t rank_from_square(uint8_t square) {return square >> 3;}
+uint64_t bit_from_square(uint8_t square) {return uint64_t(1) << square;}
+uint8_t to_square(uint8_t file, uint8_t rank) {return rank * 8 + file;}
 
 void print_bitboard(uint64_t bitboard)
 {
-    for (int rank = 7; rank >= 0; rank--)
+    for (uint8_t rank = 7; rank >= 0; rank--)
     {
-        for (int file = 0; file < 8; file++)
+        for (uint8_t file = 0; file < 8; file++)
         {
             std::cout << !!(bitboard & bit_from_square(to_square(file, rank))) << " ";
         }
@@ -28,12 +29,12 @@ void print_bitboard(uint64_t bitboard)
     std::cout << "\n";
 }
 
-uint64_t king_attack_mask(int square)
+uint64_t king_attack_mask(uint8_t square)
 {
     uint64_t mask = 0;
 
-    const int file = file_from_square(square);
-    const int rank = rank_from_square(square);
+    const uint8_t file = file_from_square(square);
+    const uint8_t rank = rank_from_square(square);
 
     mask |= bit_from_square(to_square(file - 1, rank - 1));
     mask |= bit_from_square(to_square(file - 1, rank));
@@ -47,12 +48,12 @@ uint64_t king_attack_mask(int square)
     return mask;
 }
 
-uint64_t white_pawn_push_mask(int square)
+uint64_t white_pawn_push_mask(uint8_t square)
 {
     uint64_t mask = 0;
 
-    const int file = file_from_square(square);
-    const int rank = rank_from_square(square);
+    const uint8_t file = file_from_square(square);
+    const uint8_t rank = rank_from_square(square);
 
     if (rank < 7)
     {
@@ -66,12 +67,12 @@ uint64_t white_pawn_push_mask(int square)
     return mask;
 }
 
-uint64_t white_pawn_attack_mask(int square)
+uint64_t white_pawn_attack_mask(uint8_t square)
 {
     uint64_t mask = 0;
 
-    const int file = file_from_square(square);
-    const int rank = rank_from_square(square);
+    const uint8_t file = file_from_square(square);
+    const uint8_t rank = rank_from_square(square);
 
     if (rank < 7)
     {
@@ -88,12 +89,12 @@ uint64_t white_pawn_attack_mask(int square)
     return mask;
 }
 
-uint64_t black_pawn_push_mask(int square)
+uint64_t black_pawn_push_mask(uint8_t square)
 {
     uint64_t mask = 0;
 
-    const int file = file_from_square(square);
-    const int rank = rank_from_square(square);
+    const uint8_t file = file_from_square(square);
+    const uint8_t rank = rank_from_square(square);
 
     if (rank > 0)
     {
@@ -107,12 +108,12 @@ uint64_t black_pawn_push_mask(int square)
     return mask;
 }
 
-uint64_t black_pawn_attack_mask(int square)
+uint64_t black_pawn_attack_mask(uint8_t square)
 {
     uint64_t mask = 0;
 
-    const int file = file_from_square(square);
-    const int rank = rank_from_square(square);
+    const uint8_t file = file_from_square(square);
+    const uint8_t rank = rank_from_square(square);
 
     if (rank > 0)
     {
@@ -129,12 +130,12 @@ uint64_t black_pawn_attack_mask(int square)
     return mask;
 }
 
-uint64_t knight_attack_mask(int square)
+uint64_t knight_attack_mask(uint8_t square)
 {
     uint64_t mask = 0;
 
-    const int file = file_from_square(square);
-    const int rank = rank_from_square(square);
+    const uint8_t file = file_from_square(square);
+    const uint8_t rank = rank_from_square(square);
 
     mask |= bit_from_square(to_square(file - 2, rank - 1));
     mask |= bit_from_square(to_square(file - 2, rank + 1));
@@ -148,16 +149,16 @@ uint64_t knight_attack_mask(int square)
     return mask;
 }
 
-uint64_t bishop_attack_mask(int square, uint64_t blockers)
+uint64_t bishop_attack_mask(uint8_t square, uint64_t blockers)
 {
     uint64_t attacks = 0;
 
-    const int file = file_from_square(square);
-    const int rank = rank_from_square(square);
+    const uint8_t file = file_from_square(square);
+    const uint8_t rank = rank_from_square(square);
 
-    for (int i = 1; file - i > 0 && rank - i > 0; i++)
+    for (uint8_t i = 1; file - i > 0 && rank - i > 0; i++)
     {
-        const int bit = bit_from_square(to_square(file - i, rank - i));
+        const uint8_t bit = bit_from_square(to_square(file - i, rank - i));
         attacks |= bit;
 
         if (blockers & bit)
@@ -165,9 +166,9 @@ uint64_t bishop_attack_mask(int square, uint64_t blockers)
             break;
         }
     }
-    for (int i = 1; file + i < 7 && rank - i > 0; i++)
+    for (uint8_t i = 1; file + i < 7 && rank - i > 0; i++)
     {
-        const int bit = bit_from_square(to_square(file - i, rank + i));
+        const uint8_t bit = bit_from_square(to_square(file - i, rank + i));
         attacks |= bit;
 
         if (blockers & bit)
@@ -175,9 +176,9 @@ uint64_t bishop_attack_mask(int square, uint64_t blockers)
             break;
         }
     }
-    for (int i = 1; file - i > 0 && rank + i < 7; i++)
+    for (uint8_t i = 1; file - i > 0 && rank + i < 7; i++)
     {
-        const int bit = bit_from_square(to_square(file + i, rank - i));
+        const uint8_t bit = bit_from_square(to_square(file + i, rank - i));
         attacks |= bit;
 
         if (blockers & bit)
@@ -185,9 +186,9 @@ uint64_t bishop_attack_mask(int square, uint64_t blockers)
             break;
         }
     }
-    for (int i = 1; file + i < 7 && rank + i < 7; i++)
+    for (uint8_t i = 1; file + i < 7 && rank + i < 7; i++)
     {
-        const int bit = bit_from_square(to_square(file + i, rank + i));
+        const uint8_t bit = bit_from_square(to_square(file + i, rank + i));
         attacks |= bit;
 
         if (blockers & bit)
@@ -199,16 +200,16 @@ uint64_t bishop_attack_mask(int square, uint64_t blockers)
     return attacks;
 }
 
-uint64_t rook_attack_mask(int square, uint64_t blockers)
+uint64_t rook_attack_mask(uint8_t square, uint64_t blockers)
 {
     uint64_t attacks = 0;
 
-    const int file = file_from_square(square);
-    const int rank = rank_from_square(square);
+    const uint8_t file = file_from_square(square);
+    const uint8_t rank = rank_from_square(square);
 
-    for (int i = 1; i < file; i++)
+    for (uint8_t i = 1; i < file; i++)
     {
-        const int bit = bit_from_square(to_square(i, rank));
+        const uint8_t bit = bit_from_square(to_square(i, rank));
         attacks |= bit;
 
         if (blockers & bit)
@@ -216,9 +217,9 @@ uint64_t rook_attack_mask(int square, uint64_t blockers)
             break;
         }
     }
-    for (int i = file + 1; i < 7; i++)
+    for (uint8_t i = file + 1; i < 7; i++)
     {
-        const int bit = bit_from_square(to_square(i, rank));
+        const uint8_t bit = bit_from_square(to_square(i, rank));
         attacks |= bit;
 
         if (blockers & bit)
@@ -226,9 +227,9 @@ uint64_t rook_attack_mask(int square, uint64_t blockers)
             break;
         }
     }
-    for (int i = 1; i < rank; i++)
+    for (uint8_t i = 1; i < rank; i++)
     {
-        const int bit = bit_from_square(to_square(file, i));
+        const uint8_t bit = bit_from_square(to_square(file, i));
         attacks |= bit;
 
         if (blockers & bit)
@@ -236,9 +237,9 @@ uint64_t rook_attack_mask(int square, uint64_t blockers)
             break;
         }
     }
-    for (int i = rank + 1; i < 7; i++)
+    for (uint8_t i = rank + 1; i < 7; i++)
     {
-        const int bit = bit_from_square(to_square(file, i));
+        const uint8_t bit = bit_from_square(to_square(file, i));
         attacks |= bit;
 
         if (blockers & bit)
@@ -276,43 +277,43 @@ uint64_t random_magic(std::mt19937_64& rng)
     return rng() & rng() & rng();
 }
 
-uint64_t bishop_naive_attack_mask(int square)
+uint64_t bishop_naive_attack_mask(uint8_t square)
 {
     uint64_t mask = 0;
 
-    const int file = file_from_square(square);
-    const int rank = rank_from_square(square);
+    const uint8_t file = file_from_square(square);
+    const uint8_t rank = rank_from_square(square);
 
-    for (int i = 1; file - i > 0 && rank - i > 0; i++) {mask |= bit_from_square(to_square(file - i, rank - i));}
-    for (int i = 1; file - i > 0 && rank + i < 7; i++) {mask |= bit_from_square(to_square(file - i, rank + i));}
-    for (int i = 1; file + i < 7 && rank - i > 0; i++) {mask |= bit_from_square(to_square(file + i, rank - i));}
-    for (int i = 1; file + i < 7 && rank + i < 7; i++) {mask |= bit_from_square(to_square(file + i, rank + i));}
+    for (uint8_t i = 1; file - i > 0 && rank - i > 0; i++) {mask |= bit_from_square(to_square(file - i, rank - i));}
+    for (uint8_t i = 1; file - i > 0 && rank + i < 7; i++) {mask |= bit_from_square(to_square(file - i, rank + i));}
+    for (uint8_t i = 1; file + i < 7 && rank - i > 0; i++) {mask |= bit_from_square(to_square(file + i, rank - i));}
+    for (uint8_t i = 1; file + i < 7 && rank + i < 7; i++) {mask |= bit_from_square(to_square(file + i, rank + i));}
 
     return mask;
 }
 
-uint64_t rook_naive_attack_mask(int square)
+uint64_t rook_naive_attack_mask(uint8_t square)
 {
     uint64_t mask = 0;
 
-    const int file = file_from_square(square);
-    const int rank = rank_from_square(square);
+    const uint8_t file = file_from_square(square);
+    const uint8_t rank = rank_from_square(square);
 
-    for (int i = 1;        i < file; i++) {mask |= bit_from_square(to_square(i, rank));}
-    for (int i = file + 1; i < 7;    i++) {mask |= bit_from_square(to_square(i, rank));}
-    for (int i = 1;        i < rank; i++) {mask |= bit_from_square(to_square(file, i));}
-    for (int i = rank + 1; i < 7;    i++) {mask |= bit_from_square(to_square(file, i));}
+    for (uint8_t i = 1;        i < file; i++) {mask |= bit_from_square(to_square(i, rank));}
+    for (uint8_t i = file + 1; i < 7;    i++) {mask |= bit_from_square(to_square(i, rank));}
+    for (uint8_t i = 1;        i < rank; i++) {mask |= bit_from_square(to_square(file, i));}
+    for (uint8_t i = rank + 1; i < 7;    i++) {mask |= bit_from_square(to_square(file, i));}
 
     return mask;
 }
 
 std::vector<uint64_t> all_blocker_bitboards(uint64_t naive_attack_mask)
 {
-    int bits = popcount_64(naive_attack_mask);
+    uint8_t bits = popcount_64(naive_attack_mask);
 
     std::vector<uint64_t> blocker_bitboards(bits);
     uint64_t blocker_bitboard = 0;
-    for (int i = 0; i < 1 << bits; i++)
+    for (uint16_t i = 0; i < 1 << bits; i++)
     {
         blocker_bitboards.push_back(blocker_bitboard);
 
@@ -322,9 +323,9 @@ std::vector<uint64_t> all_blocker_bitboards(uint64_t naive_attack_mask)
     return blocker_bitboards;
 }
 
-uint64_t bishop_magic(int square, std::vector<uint64_t> blocker_bitboards, std::vector<uint64_t> attack_bitboards, int bits)
+uint64_t bishop_magic(uint8_t square, std::vector<uint64_t> blocker_bitboards, std::vector<uint64_t> attack_bitboards, uint8_t bits)
 {
-    const int size = 1 << bits;
+    const uint16_t size = 1 << bits;
     std::cout << size << std::endl;
 
     std::vector<uint64_t> used(size);
@@ -342,10 +343,10 @@ uint64_t bishop_magic(int square, std::vector<uint64_t> blocker_bitboards, std::
         std::fill(used.begin(), used.end(), 0);
 
         bool fail = false;
-        for (int i = 0; i < size; i++)
+        for (uint16_t i = 0; i < size; i++)
         {
             std::cout << bits << std::endl;
-            int index = (blocker_bitboards[i] * magic) >> (64 - bits);
+            uint16_t index = (blocker_bitboards[i] * magic) >> (64 - bits);
             if (!used[index])
             {
                 used[index] = attack_bitboards[i];
@@ -364,9 +365,9 @@ uint64_t bishop_magic(int square, std::vector<uint64_t> blocker_bitboards, std::
     }
 }
 
-uint64_t rook_magic(int square, std::vector<uint64_t> blocker_bitboards, std::vector<uint64_t> attack_bitboards, int bits)
+uint64_t rook_magic(uint8_t square, std::vector<uint64_t> blocker_bitboards, std::vector<uint64_t> attack_bitboards, uint8_t bits)
 {
-    const int size = 1 << bits;
+    const uint16_t size = 1 << bits;
 
     std::vector<uint64_t> used(size);
 
@@ -378,9 +379,9 @@ uint64_t rook_magic(int square, std::vector<uint64_t> blocker_bitboards, std::ve
         std::fill(used.begin(), used.end(), 0);
 
         bool fail = false;
-        for (int i = 0; i < size; i++)
+        for (uint16_t i = 0; i < size; i++)
         {
-            int index = (blocker_bitboards[i] * magic) >> (64 - bits);
+            uint16_t index = (blocker_bitboards[i] * magic) >> (64 - bits);
             if (!used[index])
             {
                 used[index] = attack_bitboards[i];
@@ -399,50 +400,65 @@ uint64_t rook_magic(int square, std::vector<uint64_t> blocker_bitboards, std::ve
     }
 }
 
-template <typename T>
-void dump_array(std::ofstream& out, const char* name, const char* datatype, const char* suffix, T* array, const int size)
+template <typename T, size_t L>
+void dump_array(std::ofstream& out, const char* name, const char* datatype, const char* suffix, std::array<T, L> array)
 {
-    out << "constexpr " << datatype << " " << name << "[" << size << "] = {\n";
-    for (int i = 0; i < size; i++)
+    size_t size = array.size();
+    out << "constexpr " << datatype << " " << name << "[" << size << "] = {";
+    if (size)
     {
-        out << "    " << array[i] << suffix << ",\n";
+        out << "\n";
+        for (size_t i = 0; i < size; i++)
+        {
+            out << "    " << array[i] << suffix;
+
+            if (i != size - 1)
+            {
+                out << ",";
+            }
+            out << "\n";
+        }
     }
-    out << "    " << array[size - 1] << suffix << "\n};\n\n";
+    out << "};\n\n";
 };
 
 template <typename T>
 void dump_nested_vector(std::ofstream& out, const char* name, const char* datatype, const char* suffix, std::vector<std::vector<T>> vector)
 {
-    const int vector_size = vector.size();
+    out << "constexpr std::vector<std::vector<" << datatype << ">> " << name << " = {";
 
-    out << "constexpr std::vector<std::vector<" << datatype << ">> " << name << " = {\n";
-    for (int i = 0; i < vector_size; i++)
+    const size_t vector_size = vector.size();
+    if (vector_size)
     {
-        const int inner_vector_size = vector[i].size();
-
-        out << "    {\n";
-        for (int j = 0; j < inner_vector_size - 1; j++)
-        {
-            out << vector[i][j] << ",\n";
-        }
-        out << vector[i][inner_vector_size - 1] << "\n}";
-
-        if (i != vector_size - 1)
-        {
-            out << ",";
-        }
         out << "\n";
+        for (size_t i = 0; i < vector_size; i++)
+        {
+            const size_t inner_vector_size = vector[i].size();
+
+            out << "    {\n";
+            for (size_t j = 0; j < inner_vector_size - 1; j++)
+            {
+                out << vector[i][j] << ",\n";
+            }
+            out << vector[i][inner_vector_size - 1] << "\n}";
+
+            if (i != vector_size - 1)
+            {
+                out << ",";
+            }
+            out << "\n";
+        }
     }
-    out << "};";
+    out << "};\n\n";
 }
 
 int main()
 {
-    uint64_t knight_attack_masks[64], king_attack_masks[64], bishop_naive_attack_masks[64], rook_naive_attack_masks[64], bishop_magics[64], rook_magics[64];
+    std::array<uint64_t, 64> knight_attack_masks, king_attack_masks, bishop_naive_attack_masks, rook_naive_attack_masks, bishop_magics, rook_magics;
     std::vector<std::vector<uint64_t>> bishop_attack_masks(64), rook_attack_masks(64);
-    unsigned int rook_shifts[64], bishop_shifts[64];
+    std::array<uint8_t, 64> rook_shifts, bishop_shifts;
 
-    for (int square = 0; square < 64; square++)
+    for (uint8_t square = 0; square < 64; square++)
     {
         knight_attack_masks[square] = knight_attack_mask(square);
         king_attack_masks[square] = king_attack_mask(square);
@@ -461,8 +477,8 @@ int main()
             bishop_attack_masks[square].push_back(rook_attack_mask(square, blocker_bitboard));
         }
 
-        int bishop_bits = popcount_64(bishop_naive_attack_masks[square]);
-        int rook_bits = popcount_64(rook_naive_attack_masks[square]);
+        uint8_t bishop_bits = popcount_64(bishop_naive_attack_masks[square]);
+        uint8_t rook_bits = popcount_64(rook_naive_attack_masks[square]);
 
         bishop_shifts[square] = 64 - bishop_bits;
         rook_shifts[square] = 64 - rook_bits;
@@ -476,14 +492,14 @@ int main()
     std::ofstream out("precomputed_bitboards.h");
     out << "#pragma once\n#include <cstdint>\n\n";
 
-    dump_array(out, "knight_attack_masks"      , "uint64_t"    , "ULL", knight_attack_masks      , 64);
-    dump_array(out, "king_attack_masks"        , "uint64_t"    , "ULL", king_attack_masks        , 64);
-    dump_array(out, "bishop_naive_attack_masks", "uint64_t"    , "ULL", bishop_naive_attack_masks, 64);
-    dump_array(out, "rook_naive_attack_masks"  , "uint64_t"    , "ULL", rook_naive_attack_masks  , 64);
-    dump_array(out, "bishop_magics"            , "uint64_t"    , "ULL", bishop_magics            , 64);
-    dump_array(out, "rook_magics"              , "uint64_t"    , "ULL", rook_magics              , 64);
-    dump_array(out, "bishop_shifts"            , "unsigned int", "U"  , bishop_shifts            , 64);
-    dump_array(out, "rook_shifts"              , "unsigned int", "U"  , rook_shifts              , 64);
+    dump_array(out, "knight_attack_masks"      , "uint64_t"    , "ULL", knight_attack_masks      );
+    dump_array(out, "king_attack_masks"        , "uint64_t"    , "ULL", king_attack_masks        );
+    dump_array(out, "bishop_naive_attack_masks", "uint64_t"    , "ULL", bishop_naive_attack_masks);
+    dump_array(out, "rook_naive_attack_masks"  , "uint64_t"    , "ULL", rook_naive_attack_masks  );
+    dump_array(out, "bishop_magics"            , "uint64_t"    , "ULL", bishop_magics            );
+    dump_array(out, "rook_magics"              , "uint64_t"    , "ULL", rook_magics              );
+    dump_array(out, "bishop_shifts"            , "unsigned int", "U"  , bishop_shifts            );
+    dump_array(out, "rook_shifts"              , "unsigned int", "U"  , rook_shifts              );
     dump_nested_vector(out, "bishop_attack_masks", "uint64_t", "ULL", bishop_attack_masks);
     dump_nested_vector(out, "rook_attack_masks"  , "uint64_t", "ULL", rook_attack_masks  );
 
