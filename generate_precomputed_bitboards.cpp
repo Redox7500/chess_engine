@@ -301,13 +301,13 @@ U64 random_magic(std::mt19937_64& rng)
     return rng() & rng();
 }
 
-struct magic_data
+struct MagicData
 {
     U64 magic;
     std::vector<U64> attacks_bitboards;
 };
 
-magic_data find_magic(const std::vector<U64>& blockers_bitboards, const std::vector<U64>& attacks_bitboards, U8 bits)
+MagicData find_magic(const std::vector<U64>& blockers_bitboards, const std::vector<U64>& attacks_bitboards, U8 bits)
 {
     if (blockers_bitboards.size() != attacks_bitboards.size())
     {
@@ -423,15 +423,15 @@ int main()
     for (U8 square = 0; square < 64; square++)
     {
         knight_attacks_bitboards[square] = knight_attacks_bitboard(square);
-        king_attacks_bitboards[square] = king_attacks_bitboard(square);
+        king_attacks_bitboards  [square] = king_attacks_bitboard  (square);
 
         const U64 current_bishop_blocker_possibilities_bitboard = bishop_blocker_possibilities_bitboard(square);
-        const U64 current_rook_blocker_possibilities_bitboard = rook_blocker_possibilities_bitboard(square);
+        const U64 current_rook_blocker_possibilities_bitboard   = rook_blocker_possibilities_bitboard  (square);
         std::vector<U64> corresponding_bishop_attacks_bitboards;
         std::vector<U64> corresponding_rook_attacks_bitboards;
         
         std::vector<U64> bishop_blocker_bitboards = all_blocker_bitboards(current_bishop_blocker_possibilities_bitboard);
-        std::vector<U64> rook_blocker_bitboards = all_blocker_bitboards(current_rook_blocker_possibilities_bitboard);
+        std::vector<U64> rook_blocker_bitboards   = all_blocker_bitboards(current_rook_blocker_possibilities_bitboard);
 
         for (U64 blocker_bitboard:bishop_blocker_bitboards)
         {
@@ -443,13 +443,17 @@ int main()
         }
 
         U8 bishop_bits = popcount_64(current_bishop_blocker_possibilities_bitboard);
-        U8 rook_bits = popcount_64(current_rook_blocker_possibilities_bitboard);
+        U8 rook_bits   = popcount_64(current_rook_blocker_possibilities_bitboard);
 
         bishop_shifts[square] = 64 - bishop_bits;
-        rook_shifts[square] = 64 - rook_bits;
+        rook_shifts  [square] = 64 - rook_bits;
 
-        bishop_magic_bitboards[square] = find_magic(bishop_blocker_bitboards, corresponding_bishop_attacks_bitboards, bishop_bits).magic;
-        rook_magic_bitboards[square] = find_magic(rook_blocker_bitboards, corresponding_rook_attacks_bitboards, rook_bits).magic;
+        const MagicData bishop_magic_data = find_magic(bishop_blocker_bitboards, corresponding_bishop_attacks_bitboards, bishop_bits);
+        const MagicData rook_magic_data   = find_magic(rook_blocker_bitboards  , corresponding_rook_attacks_bitboards  , rook_bits);
+        bishop_magic_bitboards[square] = bishop_magic_data.magic;
+        rook_magic_bitboards  [square] = rook_magic_data  .magic;
+        ordered_bishop_attacks_bitboards[square] = bishop_magic_data.attacks_bitboards;
+        ordered_rook_attacks_bitboards  [square] = rook_magic_data  .attacks_bitboards;
 
         std::cout << "Square " << square << " done\n";
     }
