@@ -455,11 +455,11 @@ int main()
         ordered_bishop_attacks_bitboards[square] = bishop_magic_data.attacks_bitboards;
         ordered_rook_attacks_bitboards  [square] = rook_magic_data  .attacks_bitboards;
 
-        std::cout << "Square " << square << " done\n";
+        std::cout << "Square " << (int)square << " done\n";
     }
 
     std::ofstream out("precomputed_bitboards.h");
-    out << "#pragma once\n#include <cstdint>\n\n";
+    out << "#pragma once\n#include <cstdint>\n\nusing U64 = std::uint64_t;\n\n";
 
     dump_array(out, "knight_attacks_bitboards", "U64"         , "ULL", knight_attacks_bitboards);
     dump_array(out, "king_attacks_bitboards"  , "U64"         , "ULL", king_attacks_bitboards  );
