@@ -6,254 +6,266 @@
 #include <fstream>
 #include <iostream>
 
-using U8 = std::uint8_t;
-using U16 = std::uint16_t;
-using U64 = std::uint64_t;
+using Bitboard = std::uint64_t;
+using Square   = std::uint8_t;
+using Coord    = std::uint8_t;
 
-constexpr U8 popcount_64(U64 x) {return __builtin_popcountll(x);}
-constexpr U8 lsb_64(U64 x) {return __builtin_ctzll(x);}
+constexpr int popcount_64(Bitboard x) {return __builtin_popcountll(x);}
+constexpr Square lsb_64(Bitboard x) {return __builtin_ctzll(x);}
 
-constexpr U8 file_from_square(U8 square) {return square & 0b000111;}
-constexpr U8 rank_from_square(U8 square) {return square >> 3;}
-constexpr U64 bit_from_square(U8 square) {return U64(1) << square;}
-constexpr U8 to_square(U8 file, U8 rank) {return rank * 8 + file;}
+constexpr Coord file_from_square(Square square) {return square & 0b000111;}
+constexpr Coord rank_from_square(Square square) {return square >> 3;}
+constexpr Bitboard bitboard_from_square(Square square) {return 1 << square;}
+constexpr Square square_from_coords(Coord file, Coord rank) {return rank * 8 + file;}
 
-void print_bitboard(U64 bitboard)
+void print_bitboard(Bitboard bitboard)
 {
-    for (U8 rank = 8; rank-- > 0; )
+    for (Coord rank = 8; rank-- > 0; )
     {
-        for (U8 file = 0; file < 8; file++)
+        for (Coord file = 0; file < 8; file++)
         {
-            std::cout << !!(bitboard & bit_from_square(to_square(file, rank))) << " ";
+            std::cout << !!(bitboard & bitboard_from_square(square_from_coords(file, rank))) << " ";
         }
         std::cout << "\n";
     }
 }
 
-U64 king_attacks_bitboard(U8 square)
+Bitboard king_attacks_bitboard(Square square)
 {
-    U64 attacks_bitboard = 0;
+    Bitboard attacks_bitboard = 0;
 
-    const U8 file = file_from_square(square);
-    const U8 rank = rank_from_square(square);
+    const Coord file = file_from_square(square);
+    const Coord rank = rank_from_square(square);
 
-    attacks_bitboard |= bit_from_square(to_square(file, rank - 1));
-    attacks_bitboard |= bit_from_square(to_square(file, rank + 1));
+    attacks_bitboard |= bitboard_from_square(square_from_coords(file, rank - 1));
+    attacks_bitboard |= bitboard_from_square(square_from_coords(file, rank + 1));
     if (file > 0)
     {
-        attacks_bitboard |= bit_from_square(to_square(file - 1, rank));
-        if (rank > 0) {attacks_bitboard |= bit_from_square(to_square(file - 1, rank - 1));}
-        if (rank < 7) {attacks_bitboard |= bit_from_square(to_square(file - 1, rank + 1));}
+        attacks_bitboard |= bitboard_from_square(square_from_coords(file - 1, rank));
+        if (rank > 0) {attacks_bitboard |= bitboard_from_square(square_from_coords(file - 1, rank - 1));}
+        if (rank < 7) {attacks_bitboard |= bitboard_from_square(square_from_coords(file - 1, rank + 1));}
     }
     if (file < 7)
     {
-        attacks_bitboard |= bit_from_square(to_square(file + 1, rank));
-        if (rank > 0) {attacks_bitboard |= bit_from_square(to_square(file + 1, rank - 1));}
-        if (rank < 7) {attacks_bitboard |= bit_from_square(to_square(file + 1, rank + 1));}
+        attacks_bitboard |= bitboard_from_square(square_from_coords(file + 1, rank));
+        if (rank > 0) {attacks_bitboard |= bitboard_from_square(square_from_coords(file + 1, rank - 1));}
+        if (rank < 7) {attacks_bitboard |= bitboard_from_square(square_from_coords(file + 1, rank + 1));}
     }
 
     return attacks_bitboard;
 }
 
-U64 white_pawn_pushes_bitboard(U8 square)
+Bitboard white_pawn_pushes_bitboard(Square square)
 {
-    U64 attacks_bitboard = 0;
+    Bitboard attacks_bitboard = 0;
 
-    const U8 file = file_from_square(square);
-    const U8 rank = rank_from_square(square);
+    const Coord file = file_from_square(square);
+    const Coord rank = rank_from_square(square);
 
     if (rank < 7)
     {
-        attacks_bitboard |= bit_from_square(to_square(file, rank + 1));
-        if (rank == 1) {attacks_bitboard |= bit_from_square(to_square(file, 3));}
+        attacks_bitboard |= bitboard_from_square(square_from_coords(file, rank + 1));
+        if (rank == 1) {attacks_bitboard |= bitboard_from_square(square_from_coords(file, 3));}
     }
 
     return attacks_bitboard;
 }
 
-U64 black_pawn_pushes_bitboard(U8 square)
+Bitboard black_pawn_pushes_bitboard(Square square)
 {
-    U64 attacks_bitboard = 0;
+    Bitboard attacks_bitboard = 0;
 
-    const U8 file = file_from_square(square);
-    const U8 rank = rank_from_square(square);
+    const Coord file = file_from_square(square);
+    const Coord rank = rank_from_square(square);
 
     if (rank > 0)
     {
-        attacks_bitboard |= bit_from_square(to_square(file, rank - 1));
-        if (rank == 6) {attacks_bitboard |= bit_from_square(to_square(file, 4));}
+        attacks_bitboard |= bitboard_from_square(square_from_coords(file, rank - 1));
+        if (rank == 6) {attacks_bitboard |= bitboard_from_square(square_from_coords(file, 4));}
     }
 
     return attacks_bitboard;
 }
 
-U64 white_pawn_attacks_bitboard(U8 square)
+Bitboard white_pawn_attacks_bitboard(Square square)
 {
-    U64 attacks_bitboard = 0;
+    Bitboard attacks_bitboard = 0;
 
-    const U8 file = file_from_square(square);
-    const U8 rank = rank_from_square(square);
+    const Coord file = file_from_square(square);
+    const Coord rank = rank_from_square(square);
 
     if (rank < 7)
     {
-        if (file > 0) {attacks_bitboard |= bit_from_square(to_square(file - 1, rank + 1));}
-        if (file < 7) {attacks_bitboard |= bit_from_square(to_square(file + 1, rank + 1));}
+        if (file > 0) {attacks_bitboard |= bitboard_from_square(square_from_coords(file - 1, rank + 1));}
+        if (file < 7) {attacks_bitboard |= bitboard_from_square(square_from_coords(file + 1, rank + 1));}
     }
 
     return attacks_bitboard;
 }
 
-U64 black_pawn_attacks_bitboard(U8 square)
+Bitboard black_pawn_attacks_bitboard(Square square)
 {
-    U64 attacks_bitboard = 0;
+    Bitboard attacks_bitboard = 0;
 
-    const U8 file = file_from_square(square);
-    const U8 rank = rank_from_square(square);
+    const Coord file = file_from_square(square);
+    const Coord rank = rank_from_square(square);
 
     if (rank > 0)
     {
-        if (file > 0) {attacks_bitboard |= bit_from_square(to_square(file - 1, rank - 1));}
-        if (file < 7) {attacks_bitboard |= bit_from_square(to_square(file + 1, rank - 1));}
+        if (file > 0) {attacks_bitboard |= bitboard_from_square(square_from_coords(file - 1, rank - 1));}
+        if (file < 7) {attacks_bitboard |= bitboard_from_square(square_from_coords(file + 1, rank - 1));}
     }
 
     return attacks_bitboard;
 }
 
-U64 knight_attacks_bitboard(U8 square)
+Bitboard knight_attacks_bitboard(Square square)
 {
-    U64 attacks_bitboard = 0;
+    Bitboard attacks_bitboard = 0;
 
-    const U8 file = file_from_square(square);
-    const U8 rank = rank_from_square(square);
+    const Coord file = file_from_square(square);
+    const Coord rank = rank_from_square(square);
 
     if (file > 0)
     {
-        if (rank > 1) {attacks_bitboard |= bit_from_square(to_square(file - 1, rank - 2));}
-        if (rank < 6) {attacks_bitboard |= bit_from_square(to_square(file - 1, rank + 2));}
+        if (rank > 1) {attacks_bitboard |= bitboard_from_square(square_from_coords(file - 1, rank - 2));}
+        if (rank < 6) {attacks_bitboard |= bitboard_from_square(square_from_coords(file - 1, rank + 2));}
 
         if (file > 1)
         {
-            if (rank > 0) {attacks_bitboard |= bit_from_square(to_square(file - 2, rank - 1));}
-            if (rank < 7) {attacks_bitboard |= bit_from_square(to_square(file - 2, rank + 1));}
+            if (rank > 0) {attacks_bitboard |= bitboard_from_square(square_from_coords(file - 2, rank - 1));}
+            if (rank < 7) {attacks_bitboard |= bitboard_from_square(square_from_coords(file - 2, rank + 1));}
         }
     }
     if (file < 7)
     {
-        if (rank > 1) {attacks_bitboard |= bit_from_square(to_square(file + 1, rank - 2));}
-        if (rank < 6) {attacks_bitboard |= bit_from_square(to_square(file + 1, rank + 2));}
+        if (rank > 1) {attacks_bitboard |= bitboard_from_square(square_from_coords(file + 1, rank - 2));}
+        if (rank < 6) {attacks_bitboard |= bitboard_from_square(square_from_coords(file + 1, rank + 2));}
 
         if (file < 6)
         {
-            if (rank > 0) {attacks_bitboard |= bit_from_square(to_square(file + 2, rank - 1));}
-            if (rank < 7) {attacks_bitboard |= bit_from_square(to_square(file + 2, rank + 1));}
+            if (rank > 0) {attacks_bitboard |= bitboard_from_square(square_from_coords(file + 2, rank - 1));}
+            if (rank < 7) {attacks_bitboard |= bitboard_from_square(square_from_coords(file + 2, rank + 1));}
         }
     }
 
     return attacks_bitboard;
 }
 
-U64 bishop_blocker_possibilities_bitboard(U8 square)
+Bitboard bishop_blocker_possibilities_bitboard(Square square)
 {
-    U64 attacks_bitboard = 0;
+    Bitboard attacks_bitboard = 0;
 
-    const U8 file = file_from_square(square);
-    const U8 rank = rank_from_square(square);
+    const Coord file = file_from_square(square);
+    const Coord rank = rank_from_square(square);
 
-    for (U8 i = 1; file > i     && rank > i;     i++) {attacks_bitboard |= bit_from_square(to_square(file - i, rank - i));}
-    for (U8 i = 1; file > i     && rank + i < 7; i++) {attacks_bitboard |= bit_from_square(to_square(file - i, rank + i));}
-    for (U8 i = 1; file + i < 7 && rank > i;     i++) {attacks_bitboard |= bit_from_square(to_square(file + i, rank - i));}
-    for (U8 i = 1; file + i < 7 && rank + i < 7; i++) {attacks_bitboard |= bit_from_square(to_square(file + i, rank + i));}
+    for (Coord i = 1; file > i     && rank > i;     i++) {attacks_bitboard |= bitboard_from_square(square_from_coords(file - i, rank - i));}
+    for (Coord i = 1; file > i     && rank + i < 7; i++) {attacks_bitboard |= bitboard_from_square(square_from_coords(file - i, rank + i));}
+    for (Coord i = 1; file + i < 7 && rank > i;     i++) {attacks_bitboard |= bitboard_from_square(square_from_coords(file + i, rank - i));}
+    for (Coord i = 1; file + i < 7 && rank + i < 7; i++) {attacks_bitboard |= bitboard_from_square(square_from_coords(file + i, rank + i));}
 
     return attacks_bitboard;
 }
 
-U64 rook_blocker_possibilities_bitboard(U8 square)
+Bitboard rook_blocker_possibilities_bitboard(Square square)
 {
-    U64 attacks_bitboard = 0;
+    Bitboard attacks_bitboard = 0;
 
-    const U8 file = file_from_square(square);
-    const U8 rank = rank_from_square(square);
+    const Coord file = file_from_square(square);
+    const Coord rank = rank_from_square(square);
 
-    for (U8 i = 1;        i < file; i++) {attacks_bitboard |= bit_from_square(to_square(i, rank));}
-    for (U8 i = file + 1; i < 7;    i++) {attacks_bitboard |= bit_from_square(to_square(i, rank));}
-    for (U8 i = 1;        i < rank; i++) {attacks_bitboard |= bit_from_square(to_square(file, i));}
-    for (U8 i = rank + 1; i < 7;    i++) {attacks_bitboard |= bit_from_square(to_square(file, i));}
+    for (Coord i = 1;        i < file; i++) {attacks_bitboard |= bitboard_from_square(square_from_coords(i, rank));}
+    for (Coord i = file + 1; i < 7;    i++) {attacks_bitboard |= bitboard_from_square(square_from_coords(i, rank));}
+    for (Coord i = 1;        i < rank; i++) {attacks_bitboard |= bitboard_from_square(square_from_coords(file, i));}
+    for (Coord i = rank + 1; i < 7;    i++) {attacks_bitboard |= bitboard_from_square(square_from_coords(file, i));}
 
     return attacks_bitboard;
 }
 
-U64 bishop_attacks_bitboard(U8 square, U64 blockers_bitboard)
+Bitboard bishop_attacks_bitboard(Square square, Bitboard blockers_bitboard)
 {
-    U64 attacks_bitboard = 0;
+    Bitboard attacks_bitboard = 0;
 
-    const U8 file = file_from_square(square);
-    const U8 rank = rank_from_square(square);
+    const Coord file = file_from_square(square);
+    const Coord rank = rank_from_square(square);
 
-    for (U8 i = 1; file >= i && rank >= i; i++)
+    // const std::array<std::array<int, 2>, 4> directions = {{
+    //     {{-1, -1}},
+    //     {{-1,  1}},
+    //     {{ 1, -1}},
+    //     {{ 1,  1}}
+    // }};
+
+    // for (const std::array<int, 2> direction:directions)
+    // {
+        
+    // }
+
+    for (Coord i = 1; file >= i && rank >= i; i++)
     {
-        const U8 bit = bit_from_square(to_square(file - i, rank - i));
+        const Bitboard bit = bitboard_from_square(square_from_coords(file - i, rank - i));
         attacks_bitboard |= bit;
 
         if (blockers_bitboard & bit) {break;}
     }
-    for (U8 i = 1; file >= i && rank + i < 8; i++)
+    for (Coord i = 1; file >= i && rank + i < 8; i++)
     {
-        const U8 bit = bit_from_square(to_square(file - i, rank + i));
+        const Bitboard bit = bitboard_from_square(square_from_coords(file - i, rank + i));
         attacks_bitboard |= bit;
 
         if (blockers_bitboard & bit) {break;}
     }
-    for (U8 i = 1; file + i < 8 && rank >= i; i++)
+    for (Coord i = 1; file + i < 8 && rank >= i; i++)
     {
-        const U8 bit = bit_from_square(to_square(file + i, rank - i));
+        const Bitboard bit = bitboard_from_square(square_from_coords(file + i, rank - i));
         attacks_bitboard |= bit;
 
         if (blockers_bitboard & bit) {break;}
     }
-    for (U8 i = 1; file + i < 8 && rank + i < 8; i++)
+    for (Coord i = 1; file + i < 8 && rank + i < 8; i++)
     {
-        const U8 bit = bit_from_square(to_square(file + i, rank + i));
+        const Bitboard bit = bitboard_from_square(square_from_coords(file + i, rank + i));
         attacks_bitboard |= bit;
 
         if (blockers_bitboard & bit) {break;}
     }
 
-    print_bitboard(blockers_bitboard);
+    print_bitboard(attacks_bitboard);
     std::cout << "\n";
     return attacks_bitboard;
 }
 
-U64 rook_attacks_bitboard(U8 square, U64 blockers_bitboard)
+Bitboard rook_attacks_bitboard(Square square, Bitboard blockers_bitboard)
 {
-    U64 attacks_bitboard = 0;
+    Bitboard attacks_bitboard = 0;
 
-    const U8 file = file_from_square(square);
-    const U8 rank = rank_from_square(square);
+    const Coord file = file_from_square(square);
+    const Coord rank = rank_from_square(square);
 
-    for (U8 i = 0; i < file; i++)
+    for (Coord i = file - 1; i + 1 > 0; i--)
     {
-        const U8 bit = bit_from_square(to_square(i, rank));
+        const Bitboard bit = bitboard_from_square(square_from_coords(i, rank));
         attacks_bitboard |= bit;
 
         if (blockers_bitboard & bit) {break;}
     }
-    for (U8 i = file + 1; i < 8; i++)
+    for (Coord i = file + 1; i < 8; i++)
     {
-        const U8 bit = bit_from_square(to_square(i, rank));
+        const Bitboard bit = bitboard_from_square(square_from_coords(i, rank));
         attacks_bitboard |= bit;
 
         if (blockers_bitboard & bit) {break;}
     }
-    for (U8 i = 0; i < rank; i++)
+    for (Coord i = rank - 1; i + 1 > 0; i--)
     {
-        const U8 bit = bit_from_square(to_square(file, i));
+        const Bitboard bit = bitboard_from_square(square_from_coords(file, i));
         attacks_bitboard |= bit;
 
         if (blockers_bitboard & bit) {break;}
     }
-    for (U8 i = rank + 1; i < 8; i++)
+    for (Coord i = rank + 1; i < 8; i++)
     {
-        const U8 bit = bit_from_square(to_square(file, i));
+        const Bitboard bit = bitboard_from_square(square_from_coords(file, i));
         attacks_bitboard |= bit;
 
         if (blockers_bitboard & bit) {break;}
@@ -272,9 +284,9 @@ U64 rook_attacks_bitboard(U8 square, U64 blockers_bitboard)
 //         int square = __builtin_ctzll(mask);
 //         mask &= mask - 1;
 
-//         if (index & bit_from_square(bit_index))
+//         if (index & bitboard_from_square(bit_index))
 //         {
-//             subset |= bit_from_square(square);
+//             subset |= bitboard_from_square(square);
 //         }
 
 //         bit_index++;
@@ -283,14 +295,14 @@ U64 rook_attacks_bitboard(U8 square, U64 blockers_bitboard)
 //     return subset;
 // }
 
-std::vector<U64> all_blockers_bitboards(U64 naive_attacks_bitboard)
+std::vector<Bitboard> all_blockers_bitboards(Bitboard naive_attacks_bitboard)
 {
-    const U8 bits = popcount_64(naive_attacks_bitboard);
-    const U16 size = 1 << bits;
+    const int bits = popcount_64(naive_attacks_bitboard);
+    const std::size_t size = 1 << bits;
 
-    std::vector<U64> blocker_bitboards(size);
-    U64 blocker_bitboard = naive_attacks_bitboard;
-    for (U16 i = 0; i < size && blocker_bitboard > 0; i++, blocker_bitboard = (blocker_bitboard - 1) & naive_attacks_bitboard)
+    std::vector<Bitboard> blocker_bitboards(size);
+    Bitboard blocker_bitboard = naive_attacks_bitboard;
+    for (std::size_t i = 0; i < size && blocker_bitboard > 0; i++, blocker_bitboard = (blocker_bitboard - 1) & naive_attacks_bitboard)
     {
         blocker_bitboards.push_back(blocker_bitboard);
     }
@@ -298,18 +310,18 @@ std::vector<U64> all_blockers_bitboards(U64 naive_attacks_bitboard)
     return blocker_bitboards;
 }
 
-U64 random_magic(std::mt19937_64& rng)
+Bitboard random_magic(std::mt19937_64& rng)
 {
     return rng() & rng();
 }
 
 struct MagicData
 {
-    U64 magic;
-    std::vector<U64> attacks_bitboards;
+    Bitboard magic;
+    std::vector<Bitboard> attacks_bitboards;
 };
 
-MagicData find_magic(const std::vector<U64>& blockers_bitboards, const std::vector<U64>& attacks_bitboards, U8 bits)
+MagicData find_magic(const std::vector<Bitboard>& blockers_bitboards, const std::vector<Bitboard>& attacks_bitboards, int bits)
 {
     if (blockers_bitboards.size() != attacks_bitboards.size())
     {
@@ -317,7 +329,7 @@ MagicData find_magic(const std::vector<U64>& blockers_bitboards, const std::vect
         return {};
     }
 
-    const U16 size = 1 << bits;
+    const std::size_t size = 1 << bits;
 
     if (blockers_bitboards.size() > size)
     {
@@ -325,12 +337,12 @@ MagicData find_magic(const std::vector<U64>& blockers_bitboards, const std::vect
         return {};
     }
 
-    std::vector<U64> used(size);
+    std::vector<Bitboard> used(size);
 
     std::mt19937_64 rng(0x511);
     while (true)
     {
-        U64 magic = random_magic(rng);
+        Bitboard magic = random_magic(rng);
 
         // if (__builtin_popcountll((magic * mask) >> (64 - bits)) < 6)
         // {
@@ -340,11 +352,11 @@ MagicData find_magic(const std::vector<U64>& blockers_bitboards, const std::vect
         std::fill(used.begin(), used.end(), 0);
 
         bool fail = false;
-        for (U16 i = 0; i < size; i++)
+        for (std::size_t i = 0; i < size; i++)
         {
-            print_bitboard(blockers_bitboards[i]);
-            std::cout << "\n";
-            U16 index = (blockers_bitboards[i] * magic) >> (64 - bits);
+            // print_bitboard(blockers_bitboards[i]);
+            // std::cout << "\n";
+            std::size_t index = (blockers_bitboards[i] * magic) >> (64 - bits);
             if (index >= size || used[index] != attacks_bitboards[i])
             {
                 fail = true;
@@ -363,15 +375,15 @@ MagicData find_magic(const std::vector<U64>& blockers_bitboards, const std::vect
     }
 }
 
-template <typename T, size_t L>
+template <typename T, std::size_t L>
 void dump_array(std::ofstream& out, const char* name, const char* datatype, const char* suffix, const std::array<T, L>& array)
 {
-    size_t size = array.size();
+    std::size_t size = array.size();
     out << "constexpr " << datatype << " " << name << "[" << size << "] = {";
     if (size)
     {
         out << "\n";
-        for (size_t i = 0; i < size; i++)
+        for (std::size_t i = 0; i < size; i++)
         {
             out << "    " << array[i] << suffix;
 
@@ -390,16 +402,16 @@ void dump_nested_vector(std::ofstream& out, const char* name, const char* dataty
 {
     out << "constexpr std::vector<std::vector<" << datatype << ">> " << name << " = {";
 
-    const size_t vector_size = vector.size();
+    const std::size_t vector_size = vector.size();
     if (vector_size)
     {
         out << "\n";
-        for (size_t i = 0; i < vector_size; i++)
+        for (std::size_t i = 0; i < vector_size; i++)
         {
-            const size_t inner_vector_size = vector[i].size();
+            const std::size_t inner_vector_size = vector[i].size();
 
             out << "    {\n";
-            for (size_t j = 0; j < inner_vector_size - 1; j++)
+            for (std::size_t j = 0; j < inner_vector_size - 1; j++)
             {
                 out << vector[i][j] << ",\n";
             }
@@ -417,35 +429,35 @@ void dump_nested_vector(std::ofstream& out, const char* name, const char* dataty
 
 int main()
 {
-    std::array<U64, 64> knight_attacks_bitboards, king_attacks_bitboards;
-    std::vector<std::vector<U64>> ordered_bishop_attacks_bitboards(64), ordered_rook_attacks_bitboards(64);
-    std::array<U64, 64> bishop_magic_bitboards, rook_magic_bitboards;
-    std::array<U8, 64> rook_shifts, bishop_shifts;
+    std::array<Bitboard, 64> knight_attacks_bitboards, king_attacks_bitboards;
+    std::vector<std::vector<Bitboard>> ordered_bishop_attacks_bitboards(64), ordered_rook_attacks_bitboards(64);
+    std::array<Bitboard, 64> bishop_magic_bitboards, rook_magic_bitboards;
+    std::array<int, 64> rook_shifts, bishop_shifts;
 
-    for (U8 square = 0; square < 64; square++)
+    for (Square square = 0; square < 64; square++)
     {
         knight_attacks_bitboards[square] = knight_attacks_bitboard(square);
         king_attacks_bitboards  [square] = king_attacks_bitboard  (square);
 
-        const U64 current_bishop_blocker_possibilities_bitboard = bishop_blocker_possibilities_bitboard(square);
-        const U64 current_rook_blocker_possibilities_bitboard   = rook_blocker_possibilities_bitboard  (square);
-        std::vector<U64> corresponding_bishop_attacks_bitboards;
-        std::vector<U64> corresponding_rook_attacks_bitboards;
+        const Bitboard current_bishop_blocker_possibilities_bitboard = bishop_blocker_possibilities_bitboard(square);
+        const Bitboard current_rook_blocker_possibilities_bitboard   = rook_blocker_possibilities_bitboard  (square);
+        std::vector<Bitboard> corresponding_bishop_attacks_bitboards;
+        std::vector<Bitboard> corresponding_rook_attacks_bitboards;
         
-        std::vector<U64> bishop_blockers_bitboards = all_blockers_bitboards(current_bishop_blocker_possibilities_bitboard);
-        std::vector<U64> rook_blockers_bitboards   = all_blockers_bitboards(current_rook_blocker_possibilities_bitboard);
+        std::vector<Bitboard> bishop_blockers_bitboards = all_blockers_bitboards(current_bishop_blocker_possibilities_bitboard);
+        std::vector<Bitboard> rook_blockers_bitboards   = all_blockers_bitboards(current_rook_blocker_possibilities_bitboard);
 
-        for (U64 blockers_bitboard:bishop_blockers_bitboards)
+        for (Bitboard blockers_bitboard:bishop_blockers_bitboards)
         {
             corresponding_bishop_attacks_bitboards.push_back(bishop_attacks_bitboard(square, blockers_bitboard));
         }
-        for (U64 blockers_bitboard:rook_blockers_bitboards)
+        for (Bitboard blockers_bitboard:rook_blockers_bitboards)
         {
             corresponding_rook_attacks_bitboards.push_back(rook_attacks_bitboard(square, blockers_bitboard));
         }
 
-        U8 bishop_bits = popcount_64(current_bishop_blocker_possibilities_bitboard);
-        U8 rook_bits   = popcount_64(current_rook_blocker_possibilities_bitboard);
+        int bishop_bits = popcount_64(current_bishop_blocker_possibilities_bitboard);
+        int rook_bits   = popcount_64(current_rook_blocker_possibilities_bitboard);
 
         bishop_shifts[square] = 64 - bishop_bits;
         rook_shifts  [square] = 64 - rook_bits;
