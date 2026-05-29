@@ -189,45 +189,27 @@ Bitboard bishop_attacks_bitboard(Square square, Bitboard blockers_bitboard)
     const Coord file = file_from_square(square);
     const Coord rank = rank_from_square(square);
 
-    // const std::array<std::array<int, 2>, 4> directions = {{
-    //     {{-1, -1}},
-    //     {{-1,  1}},
-    //     {{ 1, -1}},
-    //     {{ 1,  1}}
-    // }};
+    const std::array<std::array<int, 2>, 4> directions = {{
+        {{-1, -1}},
+        {{-1,  1}},
+        {{ 1, -1}},
+        {{ 1,  1}}
+    }};
 
-    // for (const std::array<int, 2> direction:directions)
-    // {
-        
-    // }
-
-    for (Coord i = 1; file >= i && rank >= i; i++)
+    for (const std::array<int, 2> direction:directions)
     {
-        const Bitboard bit = bitboard_from_square(square_from_coords(file - i, rank - i));
-        attacks_bitboard |= bit;
+        Coord current_file = file + direction[0];
+        Coord current_rank = rank + direction[1];
+        Bitboard bit = 0;
 
-        if (blockers_bitboard & bit) {break;}
-    }
-    for (Coord i = 1; file >= i && rank + i < 8; i++)
-    {
-        const Bitboard bit = bitboard_from_square(square_from_coords(file - i, rank + i));
-        attacks_bitboard |= bit;
+        while (!(blockers_bitboard & bit) && 0 <= current_file && current_file < 8 && 0 <= current_file && current_file < 8)
+        {
+            bit = bitboard_from_square(square_from_coords(current_file, current_rank));
+            attacks_bitboard |= bit;
 
-        if (blockers_bitboard & bit) {break;}
-    }
-    for (Coord i = 1; file + i < 8 && rank >= i; i++)
-    {
-        const Bitboard bit = bitboard_from_square(square_from_coords(file + i, rank - i));
-        attacks_bitboard |= bit;
-
-        if (blockers_bitboard & bit) {break;}
-    }
-    for (Coord i = 1; file + i < 8 && rank + i < 8; i++)
-    {
-        const Bitboard bit = bitboard_from_square(square_from_coords(file + i, rank + i));
-        attacks_bitboard |= bit;
-
-        if (blockers_bitboard & bit) {break;}
+            current_file += direction[0];
+            current_rank += direction[1];
+        }
     }
 
     print_bitboard(attacks_bitboard);
@@ -242,33 +224,27 @@ Bitboard rook_attacks_bitboard(Square square, Bitboard blockers_bitboard)
     const Coord file = file_from_square(square);
     const Coord rank = rank_from_square(square);
 
-    for (Coord i = file - 1; i + 1 > 0; i--)
-    {
-        const Bitboard bit = bitboard_from_square(square_from_coords(i, rank));
-        attacks_bitboard |= bit;
+    const std::array<std::array<int, 2>, 4> directions = {{
+        {{-1,  0}},
+        {{ 0, -1}},
+        {{ 0,  1}},
+        {{ 1,  0}}
+    }};
 
-        if (blockers_bitboard & bit) {break;}
-    }
-    for (Coord i = file + 1; i < 8; i++)
+    for (const std::array<int, 2> direction:directions)
     {
-        const Bitboard bit = bitboard_from_square(square_from_coords(i, rank));
-        attacks_bitboard |= bit;
+        Coord current_file = file + direction[0];
+        Coord current_rank = rank + direction[1];
+        Bitboard bit = 0;
 
-        if (blockers_bitboard & bit) {break;}
-    }
-    for (Coord i = rank - 1; i + 1 > 0; i--)
-    {
-        const Bitboard bit = bitboard_from_square(square_from_coords(file, i));
-        attacks_bitboard |= bit;
+        while (!(blockers_bitboard & bit) && 0 <= current_file && current_file < 8 && 0 <= current_file && current_file < 8)
+        {
+            bit = bitboard_from_square(square_from_coords(current_file, current_rank));
+            attacks_bitboard |= bit;
 
-        if (blockers_bitboard & bit) {break;}
-    }
-    for (Coord i = rank + 1; i < 8; i++)
-    {
-        const Bitboard bit = bitboard_from_square(square_from_coords(file, i));
-        attacks_bitboard |= bit;
-
-        if (blockers_bitboard & bit) {break;}
+            current_file += direction[0];
+            current_rank += direction[1];
+        }
     }
 
     return attacks_bitboard;
