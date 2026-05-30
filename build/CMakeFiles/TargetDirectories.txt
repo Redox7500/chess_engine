@@ -1,0 +1,3 @@
+/Users/matthew/chess_engine/build/CMakeFiles/generate_precomputed_bitboards.dir
+/Users/matthew/chess_engine/build/CMakeFiles/edit_cache.dir
+/Users/matthew/chess_engine/build/CMakeFiles/rebuild_cache.dir
