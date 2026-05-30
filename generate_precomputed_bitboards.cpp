@@ -28,6 +28,7 @@ void print_bitboard(Bitboard bitboard)
         }
         std::cout << "\n";
     }
+    std::cout << "\n";
 }
 
 Bitboard king_attacks_bitboard(Square square)
@@ -212,8 +213,6 @@ Bitboard bishop_attacks_bitboard(Square square, Bitboard blockers_bitboard)
         }
     }
 
-    print_bitboard(attacks_bitboard);
-    std::cout << "\n";
     return attacks_bitboard;
 }
 
@@ -250,40 +249,19 @@ Bitboard rook_attacks_bitboard(Square square, Bitboard blockers_bitboard)
     return attacks_bitboard;
 }
 
-// U64 nth_subset(U64 mask, int index)
-// {
-//     U64 subset = 0;
-//     int bit_index = 0;
-
-//     while (mask)
-//     {
-//         int square = __builtin_ctzll(mask);
-//         mask &= mask - 1;
-
-//         if (index & bitboard_from_square(bit_index))
-//         {
-//             subset |= bitboard_from_square(square);
-//         }
-
-//         bit_index++;
-//     }
-
-//     return subset;
-// }
-
-std::vector<Bitboard> all_blockers_bitboards(Bitboard naive_attacks_bitboard)
+std::vector<Bitboard> all_blockers_bitboards(Bitboard blocker_possibilities_bitboard)
 {
-    const int bits = popcount_64(naive_attacks_bitboard);
+    const int bits = popcount_64(blocker_possibilities_bitboard);
     const std::size_t size = 1 << bits;
 
-    std::vector<Bitboard> blocker_bitboards(size);
-    Bitboard blocker_bitboard = naive_attacks_bitboard;
-    for (std::size_t i = 0; i < size && blocker_bitboard > 0; i++, blocker_bitboard = (blocker_bitboard - 1) & naive_attacks_bitboard)
+    std::vector<Bitboard> blockers_bitboards(size);
+    Bitboard blockers_bitboard = blocker_possibilities_bitboard;
+    for (std::size_t i = 0; i < size && blockers_bitboard > 0; i++, blockers_bitboard = (blockers_bitboard - 1) & blocker_possibilities_bitboard)
     {
-        blocker_bitboards.push_back(blocker_bitboard);
+        blockers_bitboards.push_back(blockers_bitboard);
     }
 
-    return blocker_bitboards;
+    return blockers_bitboards;
 }
 
 Bitboard random_magic(std::mt19937_64& rng)
