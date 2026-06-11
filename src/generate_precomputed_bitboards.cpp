@@ -209,12 +209,6 @@ MagicData find_magic(const std::vector<Bitboard>& blockers_bitboards, const std:
 
     const std::size_t size = 1 << bits;
 
-    if (blockers_bitboards.size() > size)
-    {
-        std::cerr << "More bitboards than bits available for indices!\n";
-        return {};
-    }
-
     std::vector<Bitboard> used(size);
 
     std::mt19937_64 rng(0x511);
@@ -303,9 +297,9 @@ void dump_nested_vector(std::ofstream& out, const char* name, const char* dataty
 int main()
 {
     std::array<Bitboard, 64> knight_attacks_bitboards, king_attacks_bitboards;
-    std::vector<std::vector<Bitboard>> ordered_bishop_attacks_bitboards(64), ordered_rook_attacks_bitboards(64);
     std::array<Bitboard, 64> bishop_magic_bitboards, rook_magic_bitboards;
     std::array<int, 64> rook_shifts, bishop_shifts;
+    std::vector<std::vector<Bitboard>> ordered_bishop_attacks_bitboards(64), ordered_rook_attacks_bitboards(64);
 
     for (Square square = 0; square < 64; square++)
     {
@@ -349,13 +343,13 @@ int main()
     out << "#pragma once\n#include <cstdint>\n\nusing U64 = std::uint64_t;\n\n";
 
     dump_array(out, "knight_attacks_bitboards", "U64"         , "ULL", knight_attacks_bitboards);
-    dump_array(out, "king_attacks_bitboards"  , "U64"         , "ULL", king_attacks_bitboards  );
-    dump_array(out, "bishop_magics"           , "U64"         , "ULL", bishop_magic_bitboards  );
-    dump_array(out, "rook_magics"             , "U64"         , "ULL", rook_magic_bitboards    );
-    dump_array(out, "bishop_shifts"           , "unsigned int", "U"  , bishop_shifts           );
-    dump_array(out, "rook_shifts"             , "unsigned int", "U"  , rook_shifts             );
+    dump_array(out, "king_attacks_bitboards"  , "U64"         , "ULL", king_attacks_bitboards);
+    dump_array(out, "bishop_magics"           , "U64"         , "ULL", bishop_magic_bitboards);
+    dump_array(out, "rook_magics"             , "U64"         , "ULL", rook_magic_bitboards);
+    dump_array(out, "bishop_shifts"           , "unsigned int", "U"  , bishop_shifts);
+    dump_array(out, "rook_shifts"             , "unsigned int", "U"  , rook_shifts);
     dump_nested_vector(out, "bishop_attacks_bitboards", "U64", "ULL", ordered_bishop_attacks_bitboards);
-    dump_nested_vector(out, "rook_attacks_bitboards"  , "U64", "ULL", ordered_rook_attacks_bitboards  );
+    dump_nested_vector(out, "rook_attacks_bitboards"  , "U64", "ULL", ordered_rook_attacks_bitboards);
 
     std::cout << "Done. precomputed_bitboards.h written";
 }
