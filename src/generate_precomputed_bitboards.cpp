@@ -14,7 +14,6 @@ using Position  = std::array<Coord , 2>;
 using Direction = std::array<Offset, 2>;
 
 constexpr int popcount_64(Bitboard x) {return __builtin_popcountll(x);}
-constexpr Square lsb_64(Bitboard x) {return __builtin_ctzll(x);}
 
 constexpr Bitboard bitboard_from_square(Square square) {return Bitboard{1} << square;}
 constexpr Coord file_from_square(Square square) {return square & 0b000111;}
@@ -149,28 +148,6 @@ Bitboard slider_attacks_bitboard(Square square, Bitboard blockers_bitboard, cons
     }
 
     return attacks_bitboard;
-}
-
-
-Bitboard bishop_attacks_bitboard(Square square, Bitboard blockers_bitboard)
-{
-    print_bitboard(blockers_bitboard);
-    return slider_attacks_bitboard(square, blockers_bitboard, {{
-        {{-1, -1}},
-        {{-1,  1}},
-        {{ 1, -1}},
-        {{ 1,  1}}
-    }});
-}
-
-Bitboard rook_attacks_bitboard(Square square, Bitboard blockers_bitboard)
-{
-    return slider_attacks_bitboard(square, blockers_bitboard, {{
-        {{-1,  0}},
-        {{ 0, -1}},
-        {{ 0,  1}},
-        {{ 1,  0}}
-    }});
 }
 
 std::vector<Bitboard> all_blockers_bitboards(Bitboard blocker_possibilities_bitboard)
@@ -308,19 +285,30 @@ int main()
 
         const Bitboard current_bishop_blocker_possibilities_bitboard = bishop_blocker_possibilities_bitboard(square);
         const Bitboard current_rook_blocker_possibilities_bitboard   = rook_blocker_possibilities_bitboard  (square);
-        std::vector<Bitboard> corresponding_bishop_attacks_bitboards;
-        std::vector<Bitboard> corresponding_rook_attacks_bitboards;
         
         std::vector<Bitboard> bishop_blockers_bitboards = all_blockers_bitboards(current_bishop_blocker_possibilities_bitboard);
         std::vector<Bitboard> rook_blockers_bitboards   = all_blockers_bitboards(current_rook_blocker_possibilities_bitboard);
 
+        std::vector<Bitboard> corresponding_bishop_attacks_bitboards;
+        std::vector<Bitboard> corresponding_rook_attacks_bitboards;
         for (Bitboard blockers_bitboard:bishop_blockers_bitboards)
         {
-            corresponding_bishop_attacks_bitboards.push_back(bishop_attacks_bitboard(square, blockers_bitboard));
+            corresponding_bishop_attacks_bitboards.push_back(slider_attacks_bitboard(square, blockers_bitboard, {{
+                {{-1, -1}},
+                {{-1,  1}},
+                {{ 1, -1}},
+                {{ 1,  1}}
+            }}));
+            print_bitboard(corresponding_bishop_attacks_bitboards[corresponding_bishop_attacks_bitboards.size() - 1]);
         }
         for (Bitboard blockers_bitboard:rook_blockers_bitboards)
         {
-            corresponding_rook_attacks_bitboards.push_back(rook_attacks_bitboard(square, blockers_bitboard));
+            corresponding_rook_attacks_bitboards.push_back(slider_attacks_bitboard(square, blockers_bitboard, {{
+                {{-1,  0}},
+                {{ 0, -1}},
+                {{ 0,  1}},
+                {{ 1,  0}}
+            }}));
         }
 
         int bishop_bits = popcount_64(current_bishop_blocker_possibilities_bitboard);
