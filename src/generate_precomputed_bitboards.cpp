@@ -137,7 +137,6 @@ Bitboard slider_attacks_bitboard(Square square, Bitboard blockers_bitboard, cons
     {
         Position current_position = add_direction(start_position, direction);
         Bitboard current_bit = 0;
-
         while (!(blockers_bitboard & current_bit) && within_bounds(current_position))
         {
             current_bit = bitboard_from_square(square_from_position(current_position));
@@ -186,9 +185,9 @@ MagicData find_magic(const std::vector<Bitboard>& blockers_bitboards, const std:
 
     const std::size_t size = 1 << bits;
 
-    std::vector<Bitboard> used(size);
+    std::vector<Bitboard> used{size};
 
-    std::mt19937_64 rng(0x511);
+    std::mt19937_64 rng{0};
     while (true)
     {
         Bitboard magic = random_magic(rng);
@@ -201,7 +200,7 @@ MagicData find_magic(const std::vector<Bitboard>& blockers_bitboards, const std:
             // print_bitboard(blockers_bitboards[i]);
             // std::cout << "\n";
             std::size_t index = (blockers_bitboards[i] * magic) >> (64 - bits);
-            if (index >= size || used[index] != attacks_bitboards[i])
+            if (used[index] != attacks_bitboards[i])
             {
                 fail = true;
                 break;
@@ -299,7 +298,6 @@ int main()
                 {{ 1, -1}},
                 {{ 1,  1}}
             }}));
-            print_bitboard(corresponding_bishop_attacks_bitboards[corresponding_bishop_attacks_bitboards.size() - 1]);
         }
         for (Bitboard blockers_bitboard:rook_blockers_bitboards)
         {
