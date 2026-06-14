@@ -1,6 +1,8 @@
+#include <algorithm>
 #include <array>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <random>
 #include <vector>
 
@@ -34,7 +36,7 @@ constexpr std::array<Direction, 4> rook_directions{{
 
 constexpr unsigned int popcount_64(Bitboard x) {return __builtin_popcountll(x);}
 
-constexpr Bitboard bitboard_from_square(Square square) {return Bitboard{1} << square;}
+constexpr Bitboard bitboard_from_square(Square square) {return 1 << square;}
 constexpr Coord file_from_square(Square square) {return square & 0b000111;}
 constexpr Coord rank_from_square(Square square) {return square >> 3;}
 constexpr Position position_from_square(Square square) {return {file_from_square(square), rank_from_square(square)};}
@@ -158,9 +160,10 @@ std::vector<Bitboard> all_blockers_bitboards(Bitboard blocker_possibilities_bitb
     const unsigned int bits = popcount_64(blocker_possibilities_bitboard);
     const std::size_t size = 1 << bits;
 
-    std::vector<Bitboard> blockers_bitboards(size);
-    Bitboard blockers_bitboard = blocker_possibilities_bitboard;
+    std::vector<Bitboard> blockers_bitboards;
+    blockers_bitboards.reserve(size);
 
+    Bitboard blockers_bitboard = blocker_possibilities_bitboard;
     for (std::size_t i = 0; i < size && blockers_bitboard > 0; i++, blockers_bitboard = (blockers_bitboard - 1) & blocker_possibilities_bitboard)
     {
         blockers_bitboards.push_back(blockers_bitboard);
@@ -171,7 +174,7 @@ std::vector<Bitboard> all_blockers_bitboards(Bitboard blocker_possibilities_bitb
 
 Bitboard random_magic(std::mt19937_64& rng)
 {
-    return rng() & rng();
+    return rng() & rng() & rng();
 }
 
 MagicData find_magic(const std::vector<Bitboard>& blockers_bitboards, const std::vector<Bitboard>& attacks_bitboards, unsigned int bits)
@@ -184,8 +187,9 @@ MagicData find_magic(const std::vector<Bitboard>& blockers_bitboards, const std:
 
     const std::size_t size = 1 << bits;
 
-    std::vector<Bitboard> used{size};
-    std::mt19937_64 rng{511};
+    std::vector<Bitboard> used;
+    used.reserve(size);
+    std::mt19937_64 rng(511);
 
     while (true)
     {
@@ -276,7 +280,9 @@ int main()
     std::array<Bitboard, 64> knight_attacks_bitboards, king_attacks_bitboards;
     std::array<Bitboard, 64> bishop_magic_bitboards, rook_magic_bitboards;
     std::array<unsigned int, 64> rook_shifts, bishop_shifts; 
-    std::vector<std::vector<Bitboard>> ordered_bishop_attacks_bitboards(64), ordered_rook_attacks_bitboards(64);
+    std::vector<std::vector<Bitboard>> ordered_bishop_attacks_bitboards, ordered_rook_attacks_bitboards;
+    ordered_bishop_attacks_bitboards.reserve(64);
+    ordered_rook_attacks_bitboards  .reserve(64);
 
     for (Square square = 0; square < 64; square++)
     {
@@ -291,6 +297,9 @@ int main()
 
         std::vector<Bitboard> corresponding_bishop_attacks_bitboards;
         std::vector<Bitboard> corresponding_rook_attacks_bitboards;
+        corresponding_bishop_attacks_bitboards.reserve(bishop_blockers_bitboards.size());
+        corresponding_rook_attacks_bitboards  .reserve(rook_blockers_bitboards  .size());
+
         for (Bitboard blockers_bitboard:bishop_blockers_bitboards)
         {
             corresponding_bishop_attacks_bitboards.push_back(slider_attacks_bitboard(square, blockers_bitboard, bishop_directions));
