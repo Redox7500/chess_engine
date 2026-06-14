@@ -178,7 +178,7 @@ MagicData find_magic(const std::vector<Bitboard>& blockers_bitboards, const std:
 {
     if (blockers_bitboards.size() != attacks_bitboards.size())
     {
-        std::cerr << "Mismatched blockers bitboards and attacks bitboards; each blockers bitboard should match with each attacks bitboard 1:1\n";
+        std::cerr << "Mismatched blockers bitboards and attacks bitboards; each blockers bitboard should match with each attacks bitboard 1:1" << std::endl;
         return {};
     }
 
@@ -316,8 +316,8 @@ int main()
         std::cout << "square " << (int)square << " done\n";
     }
 
-    std::ofstream out{"precomputed_bitboards.h"};
-    out << "#pragma once\n\n#include <cstdint>\n\nusing Bitboard = std::uint64_t;\n\n";
+    std::ofstream out{"src/precomputed_bitboards.h"};
+    out << "#pragma once\n\n#include <vector>\n\n#include <cstdint>\n\nusing Bitboard = std::uint64_t;\n\n";
 
     dump_array(out, "knight_attacks_bitboards", "Bitboard",     "ULL", knight_attacks_bitboards);
     dump_array(out, "king_attacks_bitboards",   "Bitboard",     "ULL", king_attacks_bitboards);
@@ -325,8 +325,8 @@ int main()
     dump_array(out, "rook_magics",              "Bitboard",     "ULL", rook_magic_bitboards);
     dump_array(out, "bishop_shifts",            "unsigned int", "U",   bishop_shifts);
     dump_array(out, "rook_shifts",              "unsigned int", "U",   rook_shifts);
-    dump_nested_vector(out, "bishop_attacks_bitboards", "U64", "ULL", ordered_bishop_attacks_bitboards);
-    dump_nested_vector(out, "rook_attacks_bitboards",   "U64", "ULL", ordered_rook_attacks_bitboards);
+    dump_nested_vector(out, "bishop_attacks_bitboards", "Bitboard", "ULL", ordered_bishop_attacks_bitboards);
+    dump_nested_vector(out, "rook_attacks_bitboards",   "Bitboard", "ULL", ordered_rook_attacks_bitboards);
 
-    std::cout << "everything is done. written to precomputed_bitboards.h.";
+    std::cout << "everything is done. written to src/precomputed_bitboards.h.";
 }
