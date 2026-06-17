@@ -6,6 +6,7 @@
 #include <random>
 #include <vector>
 
+#include <cstddef>
 #include <cstdint>
 
 using Bitboard  = std::uint64_t;
@@ -45,6 +46,14 @@ constexpr Square square_from_coords(Coord file, Coord rank) {return rank * 8 + f
 constexpr Square square_from_position(const Position& position) {return square_from_coords(position[0], position[1]);}
 
 constexpr Position add_direction(const Position& position, const Direction& direction) {return {static_cast<Coord>(position[0] + direction[0]), static_cast<Coord>(position[1] + direction[1])};}
+
+template <typename T>
+constexpr void append_vector(std::vector<T>& to_be_appended_to, std::vector<T>& to_append) 
+{
+    to_be_appended_to.reserve(to_be_appended_to.size() + to_append.size());
+    std::move(to_append.begin(), to_append.end(), std::back_inserter(to_be_appended_to));
+    to_append.clear();
+}
 
 void print_bitboard(Bitboard bitboard)
 {
@@ -164,9 +173,12 @@ std::vector<Bitboard> all_blockers_bitboards(Bitboard blocker_possibilities_bitb
     blockers_bitboards.reserve(size);
 
     Bitboard blockers_bitboard = blocker_possibilities_bitboard;
-    for (std::size_t i = 0; i < size && blockers_bitboard > 0; i++, blockers_bitboard = (blockers_bitboard - 1) & blocker_possibilities_bitboard)
+    for (std::size_t i = 0; i < size; i++)
     {
         blockers_bitboards.push_back(blockers_bitboard);
+
+        if (blockers_bitboard == 0) {break;}
+        blockers_bitboard = (blockers_bitboard - 1) & blocker_possibilities_bitboard;
     }
 
     return blockers_bitboards;
@@ -181,21 +193,24 @@ MagicData find_magic(const std::vector<Bitboard>& blockers_bitboards, const std:
 {
     if (blockers_bitboards.size() != attacks_bitboards.size())
     {
-        std::cerr << "Mismatched blockers bitboards and attacks bitboards; each blockers bitboard should match with each attacks bitboard 1:1" << std::endl;
+        std::cerr << "mismatched blockers bitboards and attacks bitboards; each blockers bitboard should match with each attacks bitboard 1:1" << std::endl;
+        return {};
+    }
+    if (bits == 0 || bits > 63)
+    {
+        std::cerr << "number of bits is not within 1-63" << std::endl;
         return {};
     }
 
     const std::size_t size = 1 << bits;
 
-    std::vector<Bitboard> used;
-    used.reserve(size);
+    std::vector<Bitboard> ordered_attacks_bitboards(size);
+    std::vector<bool> set_ordered_attacks_bitboards(size);
     std::mt19937_64 rng(511);
 
     while (true)
     {
         Bitboard magic = random_magic(rng);
-
-        std::fill(used.begin(), used.end(), 0);
 
         bool fail = false;
 
@@ -203,22 +218,30 @@ MagicData find_magic(const std::vector<Bitboard>& blockers_bitboards, const std:
         {
             // print_bitboard(blockers_bitboards[i]);
             const std::size_t index = (blockers_bitboards[i] * magic) >> (64 - bits);
-            if (used[index] && used[index] != attacks_bitboards[i])
+            if (set_ordered_attacks_bitboards[index])
             {
-                fail = true;
-                std::cout << "Failed after " << i << " blocker bitboards\n";
-                break;
+                if (ordered_attacks_bitboards[index] != attacks_bitboards[i])
+                {
+                    std::cout << "failed after " << i << " blocker bitboards\n";
+                    fail = true;
+                    break;
+                }
             }
-            if (!used[index])
+            else
             {
-                used[index] = attacks_bitboards[i];
+                ordered_attacks_bitboards    [index] = attacks_bitboards[i];
+                set_ordered_attacks_bitboards[index] = true;
             }
         }
 
         if (!fail)
         {
-            return {magic, used};
+            std::cout << "correct magic found!\n";
+            return {magic, ordered_attacks_bitboards};
         }
+
+        std::fill(ordered_attacks_bitboards    .begin(), ordered_attacks_bitboards    .end(), 0);
+        std::fill(set_ordered_attacks_bitboards.begin(), set_ordered_attacks_bitboards.end(), false);
     }
 }
 
@@ -227,13 +250,13 @@ void dump_array(std::ofstream& out, const char* name, const char* datatype, cons
 {
     const std::size_t size = array.size();
 
-    out << "constexpr " << datatype << " " << name << "[" << size << "] = {";
+    out << "constexpr std::array<" << datatype << ", " << size << "> " << name << " = {";
     if (size)
     {
         out << "\n";
         for (std::size_t i = 0; i < size; i++)
         {
-            out << "    " << array[i] << suffix;
+            out << "\t" << array[i] << suffix;
 
             if (i != size - 1)
             {
@@ -242,47 +265,73 @@ void dump_array(std::ofstream& out, const char* name, const char* datatype, cons
             out << "\n";
         }
     }
-    out << "};\n\n";
+    out << "};\n";
 };
 
 template <typename T>
-void dump_nested_vector(std::ofstream& out, const char* name, const char* datatype, const char* suffix, const std::vector<std::vector<T>>& vector)
+void dump_array(std::ofstream& out, const char* name, const char* datatype, const char* suffix, const std::vector<T>& array)
 {
-    const std::size_t vector_size = vector.size();
+    const std::size_t size = array.size();
 
-    out << "constexpr std::vector<std::vector<" << datatype << ">> " << name << " = {";
-    if (vector_size)
+    out << "constexpr std::array<" << datatype << ", " << size << "> " << name << " = {";
+    if (size)
     {
         out << "\n";
-        for (std::size_t i = 0; i < vector_size; i++)
+        for (std::size_t i = 0; i < size; i++)
         {
-            const std::size_t inner_vector_size = vector[i].size();
+            out << "\t" << array[i] << suffix;
 
-            out << "    {\n";
-            for (std::size_t j = 0; j < inner_vector_size - 1; j++)
-            {
-                out << vector[i][j] << ",\n";
-            }
-            out << vector[i][inner_vector_size - 1] << "\n}";
-
-            if (i != vector_size - 1)
+            if (i != size - 1)
             {
                 out << ",";
             }
             out << "\n";
         }
     }
-    out << "};\n\n";
+    out << "};\n";
 }
+
+// template <typename T>
+// void dump_nested_vector(std::ofstream& out, const char* name, const char* datatype, const char* suffix, const std::vector<std::vector<T>>& vector)
+// {
+//     const std::size_t vector_size = vector.size();
+
+//     out << "constexpr std::vector<std::vector<" << datatype << ">> " << name << " = {";
+//     if (vector_size)
+//     {
+//         out << "\n";
+//         for (std::size_t i = 0; i < vector_size; i++)
+//         {
+//             const std::size_t inner_vector_size = vector[i].size();
+
+//             out << "    {\n";
+//             for (std::size_t j = 0; j < inner_vector_size - 1; j++)
+//             {
+//                 out << vector[i][j] << ",\n";
+//             }
+//             out << vector[i][inner_vector_size - 1] << "\n}";
+
+//             if (i != vector_size - 1)
+//             {
+//                 out << ",";
+//             }
+//             out << "\n";
+//         }
+//     }
+//     else
+//     {
+//         out << "{}";
+//     }
+//     out << "};\n";
+// }
 
 int main()
 {
     std::array<Bitboard, 64> knight_attacks_bitboards, king_attacks_bitboards;
     std::array<Bitboard, 64> bishop_magic_bitboards, rook_magic_bitboards;
     std::array<unsigned int, 64> rook_shifts, bishop_shifts; 
-    std::vector<std::vector<Bitboard>> ordered_bishop_attacks_bitboards, ordered_rook_attacks_bitboards;
-    ordered_bishop_attacks_bitboards.reserve(64);
-    ordered_rook_attacks_bitboards  .reserve(64);
+    std::vector<Bitboard> ordered_bishop_attacks_bitboards, ordered_rook_attacks_bitboards;
+    std::array<std::size_t, 64> ordered_bishop_attacks_bitboards_row_offsets, ordered_rook_attacks_bitboards_row_offsets;
 
     for (Square square = 0; square < 64; square++)
     {
@@ -315,27 +364,39 @@ int main()
         bishop_shifts[square] = 64 - bishop_bits;
         rook_shifts  [square] = 64 - rook_bits;
 
-        const MagicData bishop_magic_data = find_magic(bishop_blockers_bitboards, corresponding_bishop_attacks_bitboards, bishop_bits);
-        const MagicData rook_magic_data   = find_magic(rook_blockers_bitboards,   corresponding_rook_attacks_bitboards,   rook_bits);
+        MagicData bishop_magic_data = find_magic(bishop_blockers_bitboards, corresponding_bishop_attacks_bitboards, bishop_bits);
+        MagicData rook_magic_data   = find_magic(rook_blockers_bitboards,   corresponding_rook_attacks_bitboards,   rook_bits);
+        
         bishop_magic_bitboards[square] = bishop_magic_data.magic;
         rook_magic_bitboards  [square] = rook_magic_data  .magic;
-        ordered_bishop_attacks_bitboards[square] = bishop_magic_data.attacks_bitboards;
-        ordered_rook_attacks_bitboards  [square] = rook_magic_data  .attacks_bitboards;
+        
+        append_vector(ordered_bishop_attacks_bitboards, bishop_magic_data.attacks_bitboards);
+        append_vector(ordered_rook_attacks_bitboards,   rook_magic_data  .attacks_bitboards);
+
+        ordered_bishop_attacks_bitboards_row_offsets[square] = bishop_magic_data.attacks_bitboards.size(); // 0 somehow
+        ordered_rook_attacks_bitboards_row_offsets  [square] = rook_magic_data  .attacks_bitboards.size(); // also 0
+        if (square > 0)
+        {
+            ordered_bishop_attacks_bitboards_row_offsets[square] += ordered_bishop_attacks_bitboards_row_offsets[square - 1];
+            ordered_rook_attacks_bitboards_row_offsets  [square] += ordered_rook_attacks_bitboards_row_offsets  [square - 1];
+        }
 
         std::cout << "square " << (int)square << " done\n";
     }
 
     std::ofstream out{"src/precomputed_bitboards.h"};
-    out << "#pragma once\n\n#include <vector>\n\n#include <cstdint>\n\nusing Bitboard = std::uint64_t;\n\n";
+    out << "#pragma once\n\n#include <vector>\n\n#include <cstddef>\n#include <cstdint>\n\n";
 
-    dump_array(out, "knight_attacks_bitboards", "Bitboard",     "ULL", knight_attacks_bitboards);
-    dump_array(out, "king_attacks_bitboards",   "Bitboard",     "ULL", king_attacks_bitboards);
-    dump_array(out, "bishop_magics",            "Bitboard",     "ULL", bishop_magic_bitboards);
-    dump_array(out, "rook_magics",              "Bitboard",     "ULL", rook_magic_bitboards);
-    dump_array(out, "bishop_shifts",            "unsigned int", "U",   bishop_shifts);
-    dump_array(out, "rook_shifts",              "unsigned int", "U",   rook_shifts);
-    dump_nested_vector(out, "bishop_attacks_bitboards", "Bitboard", "ULL", ordered_bishop_attacks_bitboards);
-    dump_nested_vector(out, "rook_attacks_bitboards",   "Bitboard", "ULL", ordered_rook_attacks_bitboards);
+    dump_array(out, "knight_attacks_bitboards",             "std::uint64_t", "ULL", knight_attacks_bitboards);
+    dump_array(out, "king_attacks_bitboards",               "std::uint64_t", "ULL", king_attacks_bitboards);
+    dump_array(out, "bishop_magics",                        "std::uint64_t", "ULL", bishop_magic_bitboards);
+    dump_array(out, "rook_magics",                          "std::uint64_t", "ULL", rook_magic_bitboards);
+    dump_array(out, "bishop_shifts",                        "unsigned int",  "U",   bishop_shifts);
+    dump_array(out, "rook_shifts",                          "unsigned int",  "U",   rook_shifts);
+    dump_array(out, "bishop_attacks_bitboards",             "std::uint64_t", "ULL", ordered_bishop_attacks_bitboards);
+    dump_array(out, "rook_attacks_bitboards",               "std::uint64_t", "ULL", ordered_rook_attacks_bitboards);
+    dump_array(out, "bishop_attacks_bitboards_row_offsets", "std::size_t",   "U",   ordered_bishop_attacks_bitboards_row_offsets);
+    dump_array(out, "rook_attacks_bitboards_row_offsets",   "std::size_t",   "U",   ordered_rook_attacks_bitboards_row_offsets);
 
     std::cout << "everything is done. written to src/precomputed_bitboards.h.";
 }
