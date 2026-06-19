@@ -36,6 +36,7 @@ constexpr std::array<Direction, 4> rook_directions{{
 }};
 
 constexpr unsigned int popcount_64(Bitboard x) {return __builtin_popcountll(x);}
+template <typename T> constexpr unsigned int ctz_log2(T x) {return __builtin_ctz(x);}
 
 constexpr Bitboard bitboard_from_square(Square square) {return 1 << square;}
 constexpr Coord file_from_square(Square square) {return square & 0b000111;}
@@ -172,12 +173,10 @@ std::vector<Bitboard> all_blockers_bitboards(Bitboard blocker_possibilities_bitb
     std::vector<Bitboard> blockers_bitboards;
     blockers_bitboards.reserve(size);
 
-    Bitboard blockers_bitboard = blocker_possibilities_bitboard;
+    Bitboard blockers_bitboard = 0;
     for (std::size_t i = 0; i < size; i++)
     {
         blockers_bitboards.push_back(blockers_bitboard);
-
-        if (blockers_bitboard == 0) {break;}
         blockers_bitboard = (blockers_bitboard - 1) & blocker_possibilities_bitboard;
     }
 
@@ -189,20 +188,17 @@ Bitboard random_magic(std::mt19937_64& rng)
     return rng() & rng() & rng();
 }
 
-MagicData find_magic(const std::vector<Bitboard>& blockers_bitboards, const std::vector<Bitboard>& attacks_bitboards, unsigned int bits)
+MagicData find_magic(const std::vector<Bitboard>& blockers_bitboards, const std::vector<Bitboard>& attacks_bitboards)
 {
-    if (blockers_bitboards.size() != attacks_bitboards.size())
-    {
-        std::cerr << "mismatched blockers bitboards and attacks bitboards; each blockers bitboard should match with each attacks bitboard 1:1" << std::endl;
-        return {};
-    }
-    if (bits == 0 || bits > 63)
-    {
-        std::cerr << "number of bits is not within 1-63" << std::endl;
-        return {};
-    }
+    const std::size_t size = blockers_bitboards.size();
+    if (!size) {std::cerr << "empty blockers bitboards vector" << std::endl; return {};}
+    if (size != attacks_bitboards.size()) {std::cerr << "mismatched blockers bitboards and attacks bitboards; each blockers bitboard should match with each attacks bitboard 1:1" << std::endl; return {};}
 
-    const std::size_t size = 1 << bits;
+    if (size & (size - 1)) {std::cerr << "blockers bitboards vector size is not an integer power of 2" << std::endl; return{};}
+    
+    const unsigned int bits = ctz_log2(size);
+    if (bits == 0 || bits > 63) {std::cerr << "blockers bitboards vector has size = 1 or size > 2^63" << std::endl; return {};}
+
 
     std::vector<Bitboard> ordered_attacks_bitboards(size);
     std::vector<bool> set_ordered_attacks_bitboards(size);
@@ -222,8 +218,10 @@ MagicData find_magic(const std::vector<Bitboard>& blockers_bitboards, const std:
             {
                 if (ordered_attacks_bitboards[index] != attacks_bitboards[i])
                 {
-                    std::cout << "failed after " << i << " blocker bitboards\n";
                     fail = true;
+                    std::fill(ordered_attacks_bitboards    .begin(), ordered_attacks_bitboards    .end(), 0);
+                    std::fill(set_ordered_attacks_bitboards.begin(), set_ordered_attacks_bitboards.end(), false);
+                    std::cout << "failed after " << i << " blocker bitboards\n";
                     break;
                 }
             }
@@ -239,9 +237,6 @@ MagicData find_magic(const std::vector<Bitboard>& blockers_bitboards, const std:
             std::cout << "correct magic found!\n";
             return {magic, ordered_attacks_bitboards};
         }
-
-        std::fill(ordered_attacks_bitboards    .begin(), ordered_attacks_bitboards    .end(), 0);
-        std::fill(set_ordered_attacks_bitboards.begin(), set_ordered_attacks_bitboards.end(), false);
     }
 }
 
@@ -291,40 +286,6 @@ void dump_array(std::ofstream& out, const char* name, const char* datatype, cons
     out << "};\n";
 }
 
-// template <typename T>
-// void dump_nested_vector(std::ofstream& out, const char* name, const char* datatype, const char* suffix, const std::vector<std::vector<T>>& vector)
-// {
-//     const std::size_t vector_size = vector.size();
-
-//     out << "constexpr std::vector<std::vector<" << datatype << ">> " << name << " = {";
-//     if (vector_size)
-//     {
-//         out << "\n";
-//         for (std::size_t i = 0; i < vector_size; i++)
-//         {
-//             const std::size_t inner_vector_size = vector[i].size();
-
-//             out << "    {\n";
-//             for (std::size_t j = 0; j < inner_vector_size - 1; j++)
-//             {
-//                 out << vector[i][j] << ",\n";
-//             }
-//             out << vector[i][inner_vector_size - 1] << "\n}";
-
-//             if (i != vector_size - 1)
-//             {
-//                 out << ",";
-//             }
-//             out << "\n";
-//         }
-//     }
-//     else
-//     {
-//         out << "{}";
-//     }
-//     out << "};\n";
-// }
-
 int main()
 {
     std::array<Bitboard, 64> knight_attacks_bitboards, king_attacks_bitboards;
@@ -364,8 +325,8 @@ int main()
         bishop_shifts[square] = 64 - bishop_bits;
         rook_shifts  [square] = 64 - rook_bits;
 
-        MagicData bishop_magic_data = find_magic(bishop_blockers_bitboards, corresponding_bishop_attacks_bitboards, bishop_bits);
-        MagicData rook_magic_data   = find_magic(rook_blockers_bitboards,   corresponding_rook_attacks_bitboards,   rook_bits);
+        MagicData bishop_magic_data = find_magic(bishop_blockers_bitboards, corresponding_bishop_attacks_bitboards);
+        MagicData rook_magic_data   = find_magic(rook_blockers_bitboards,   corresponding_rook_attacks_bitboards);
         
         bishop_magic_bitboards[square] = bishop_magic_data.magic;
         rook_magic_bitboards  [square] = rook_magic_data  .magic;
