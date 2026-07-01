@@ -12,8 +12,6 @@
 using Bitboard  = std::uint64_t;
 using Square    = std::uint8_t;
 using Coord     = std::uint8_t;
-using Offset    = std::int8_t;
-using Position  = std::array<Coord,  2>;
 
 struct MagicData
 {
@@ -27,10 +25,8 @@ template <typename T> constexpr unsigned int ctz_log2(T x) {return __builtin_ctz
 constexpr Bitboard bit_from_square(Square square) {return 1 << square;}
 constexpr Coord file_from_square(Square square) {return square & 0b000111;}
 constexpr Coord rank_from_square(Square square) {return square >> 3;}
-constexpr Position position_from_square(Square square) {return {file_from_square(square), rank_from_square(square)};}
 
 constexpr Square square_from_coords(Coord file, Coord rank) {return rank * 8 + file;}
-constexpr Square square_from_position(const Position& position) {return square_from_coords(position[0], position[1]);}
 
 template <typename T>
 constexpr void append_vector(std::vector<T>& to_be_appended_to, std::vector<T>& to_append) 
