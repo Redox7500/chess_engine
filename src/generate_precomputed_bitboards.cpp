@@ -72,7 +72,7 @@ Bitboard king_attacks_bitboard(Square square)
         if (rank > 0) {attacks_bitboard |= bit_from_coords(file + 1, rank - 1);}
         if (rank < 7) {attacks_bitboard |= bit_from_coords(file + 1, rank + 1);}
     }
-    print_bitboard(attacks_bitboard);
+
     return attacks_bitboard;
 }
 
@@ -131,11 +131,11 @@ Bitboard rook_blocker_possibilities_bitboard(Square square)
 
     Bitboard blocker_possibilities_bitboard = 0;
 
-    for (Coord i = 1;        i < file;     i++) {blocker_possibilities_bitboard |= bit_from_coords(i, rank);}
-    for (Coord i = file + 1; file + i < 7; i++) {blocker_possibilities_bitboard |= bit_from_coords(i, rank);}
-    for (Coord i = 1;        i < rank;     i++) {blocker_possibilities_bitboard |= bit_from_coords(file, i);}
-    for (Coord i = rank + 1; rank + i < 7; i++) {blocker_possibilities_bitboard |= bit_from_coords(file, i);}
-
+    for (Coord i = 1;        i < file; i++) {blocker_possibilities_bitboard |= bit_from_coords(i, rank);}
+    for (Coord i = file + 1; i < 7;    i++) {blocker_possibilities_bitboard |= bit_from_coords(i, rank);}
+    for (Coord i = 1;        i < rank; i++) {blocker_possibilities_bitboard |= bit_from_coords(file, i);}
+    for (Coord i = rank + 1; i < 7;    i++) {blocker_possibilities_bitboard |= bit_from_coords(file, i);}
+    
     return blocker_possibilities_bitboard;
 }
 
